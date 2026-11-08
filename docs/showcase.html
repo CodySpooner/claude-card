@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Claude Card pictures</title>
+<!-- Stages the real card page (demo.html) for make-pictures.mjs. Open it with ?scene=hero, social, viewer, prism or card-prism. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@500;800&display=swap">
+<style>
+:root { color-scheme: dark }
+* { margin: 0; box-sizing: border-box }
+html, body { height: 100%; overflow: hidden; background: transparent }
+iframe { display: block; border: 0; background: transparent }
+.full iframe { width: 100%; height: 100% }
+
+.room { position: relative; display: flex; height: 100%; background: #08080d }
+.room::before, .room::after { content: ''; position: absolute; width: 760px; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(closest-side, #5a2fd0, transparent); left: -60px; top: -260px; opacity: .8 }
+.room::after { background: radial-gradient(closest-side, #a01f7a, transparent); left: auto; right: -80px; top: auto; bottom: -340px }
+.dots { position: absolute; inset: 0; background: radial-gradient(rgba(255,255,255,.1) 1px, transparent 1.5px) 0 0 / 28px 28px; mask: radial-gradient(62% 70% at 50% 50%, #000, transparent) }
+.word { position: absolute; inset: 0; display: grid; place-items: center; font: 800 172px/1 Inter, sans-serif; letter-spacing: -.04em; white-space: nowrap; background: linear-gradient(rgba(255,255,255,.2), rgba(255,255,255,.03)) center / 100% 172px no-repeat; -webkit-background-clip: text; background-clip: text; color: transparent }
+.row { position: relative; z-index: 1; display: flex; align-items: center; justify-content: center; width: 100%; margin-top: 8px }
+
+.pitch { position: relative; z-index: 2; flex: none; width: 480px; padding: 0 0 0 64px; align-self: center; color: #fff; font-family: Inter, sans-serif }
+.pitch h1 { font-size: 78px; font-weight: 800; line-height: 1; letter-spacing: -.04em }
+.pitch h1 em { display: block; font-style: normal; background: linear-gradient(100deg, #ff7ae0, #b39bff 25%, #5ce1ff 50%, #6fffc0 75%, #fff27a); -webkit-background-clip: text; background-clip: text; color: transparent }
+.pitch p { margin-top: 22px; font-size: 26px; font-weight: 500; line-height: 1.35; color: #c9c9d6 }
+.pitch code { display: inline-block; margin-top: 28px; padding: 10px 18px; border-radius: 12px; background: rgba(255,255,255,.1); font: 500 26px Consolas, monospace; color: #fff }
+.fan { position: relative; z-index: 1; flex: 1 }
+.fan iframe { position: absolute; left: 50%; top: 50% }
+</style>
+</head>
+<body>
+<script>
+const scene = new URLSearchParams(location.search).get('scene');
+const TAU = Math.PI * 2;
+const ease = x => x < .5 ? 4 * x * x * x : 1 - (-2 * x + 2) ** 3 / 2;
+const span = (u, a, b) => ease(Math.min(1, Math.max(0, (u - a) / (b - a))));
+// The front, a flip to the back, the back, a flip home. The sways repeat twice a loop, so the end joins the start.
+const angles = u => ({ ry: 180 * span(u, .38, .5) - 180 * span(u, .74, .86) + 18 * Math.sin(u * TAU * 2), rx: 5 * Math.sin(u * TAU * 2 + 1) });
+
+const frames = [];
+function addFrame(parent, id, width, height, css, offset = 0, style = '') {
+  const frame = Object.assign(document.createElement('iframe'), { src: `demo.html#${id}`, scrolling: 'no' });
+  frame.style.cssText = `width:${width};height:${height};${style}`;
+  parent.append(frame);
+  frames.push({ frame, css, offset });
+}
+
+const CLEAN = 'html,body{background:transparent!important}.aura,.ghost,.dock{display:none!important}';
+if (scene === 'hero') {
+  document.body.innerHTML = '<div class="room"><i class="dots"></i><div class="word">CLAUDE CARD</div><div class="row"></div></div>';
+  const row = document.querySelector('.row');
+  [['horizon', 214], ['obsidian', 244], ['prism', 280], ['phosphor', 244], ['volt', 214]].forEach(([id, w], i) => {
+    addFrame(row, id, `${w * 1.08}px`, `${w * 1.75}px`, `${CLEAN}.stage{--w:${w}px}`, i * -.05);
+  });
+} else if (scene === 'social') {
+  document.body.innerHTML = '<div class="room"><i class="dots"></i><div class="pitch"><h1>Claude<em>Card</em></h1><p>Your Claude stats as a holographic 3D trading card.</p><code>/card</code></div><div class="fan"></div></div>';
+  const fan = document.querySelector('.fan');
+  [['volt', -19, -210, 26], ['horizon', -9.5, -106, 2], ['phosphor', 9.5, 106, 2], ['obsidian', 19, 210, 26], ['prism', 0, 0, -12]].forEach(([id, turn, x, y]) => {
+    addFrame(fan, id, '380px', '520px', `${CLEAN}.stage{--w:340px}.floor{display:none}`, 0, `margin:-260px -190px;transform:translate(${x}px,${y}px) rotate(${turn}deg)`);
+  });
+} else if (scene === 'viewer') {
+  document.body.className = 'full';
+  addFrame(document.body, 'prism', '100%', '100%', '');
+} else if (scene.startsWith('card-')) {
+  document.body.className = 'full';
+  addFrame(document.body, scene.slice(5), '100%', '100%', `${CLEAN}.floor{display:none}.stage{--w:560px}`);
+} else {
+  document.body.className = 'full';
+  addFrame(document.body, scene, '100%', '100%', '.dock{display:none!important}.stage{--w:320px}');
+}
+
+window.ready = Promise.all(frames.map(({ frame, css }) => new Promise(done => { frame.onload = done; }).then(async () => {
+  const page = frame.contentWindow;
+  page.document.head.insertAdjacentHTML('beforeend', `<style>${css}</style>`);
+  await page.document.fonts.ready;
+  page.eval('intro = -1e9; drag = { x: 0, y: 0 }; lastInput = 1e12; pose()');
+}))).then(() => document.fonts.ready).then(() => window.seek(0));
+
+// Moves every card to a point in the loop and sets each CSS animation to match, so the frames are repeatable.
+window.seek = (t, seconds = 6) => {
+  const u = t / seconds;
+  for (const { frame, offset } of frames) {
+    const page = frame.contentWindow;
+    const still = scene === 'social' || scene === 'viewer' || scene.startsWith('card-');
+    const { ry, rx } = still ? { ry: scene === 'viewer' ? -16 : 0, rx: scene === 'viewer' ? 6 : 0 } : angles((u - offset + 1) % 1);
+    page.eval(`ry = ${ry}; rx = ${rx}; pose()`);
+    // A flat card has no tilt, so pictures of one get the shine of a tilted one.
+    if (still && scene !== 'viewer') page.eval("put('--mx', '30%'); put('--my', '34%'); put('--tilt', '.75'); put('--hue', '48'); put('--px', '-.4'); put('--py', '-.3')");
+    for (const animation of page.document.getAnimations()) {
+      animation.pause();
+      const { duration } = animation.effect.getTiming();
+      const name = animation.animationName;
+      if (name === 'drift') animation.currentTime = 8000;
+      else if (name === 'ghost-in' || name === 'rise') animation.currentTime = duration + 5000;
+      else animation.currentTime = (u % 1) * Math.max(1, Math.round(seconds * 1000 / duration)) * duration;
+    }
+  }
+};
+</script>
+</body>
+</html>
