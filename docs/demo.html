@@ -1,0 +1,698 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Claude Card</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=JetBrains+Mono:wght@500;700&family=Michroma&family=Orbitron:wght@700;900&family=Rajdhani:wght@600;700&family=Space+Grotesk:wght@500;700&family=Unbounded:wght@600;800&family=VT323&display=swap">
+<style>
+/* ─── Stage, 3D card, shared light layers. 1cqw = 1% of the card's width, so every design scales as one. ─── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0 }
+/* Registered so the page's colors can fade from one design to the next. */
+@property --base { syntax: '<color>'; inherits: true; initial-value: #07070c }
+@property --a1 { syntax: '<color>'; inherits: true; initial-value: #333 }
+@property --a2 { syntax: '<color>'; inherits: true; initial-value: #333 }
+@property --accent { syntax: '<color>'; inherits: true; initial-value: #fff }
+:root { color-scheme: dark }
+body { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; min-height: 100dvh; overflow: hidden; background: var(--base); color: #f2efe9; font: 500 13px/1.4 system-ui, -apple-system, 'Segoe UI', sans-serif; user-select: none; -webkit-user-select: none; transition: --base .7s, --a1 .7s, --a2 .7s, --accent .4s }
+i { display: block; font-style: normal }
+
+/* The room around the card: two drifting glows, a dot grid, and the design's name in giant outlined type. */
+.aura { position: fixed; inset: 0; overflow: hidden; pointer-events: none }
+.aura i { position: absolute; left: 50%; top: 46%; width: 120vmin; aspect-ratio: 1; margin: -60vmin; border-radius: 50%; background: radial-gradient(closest-side, var(--a1), transparent); opacity: .7; animation: drift 17s ease-in-out infinite alternate }
+.aura i + i { width: 96vmin; margin: -48vmin; background: radial-gradient(closest-side, var(--a2), transparent); animation-duration: 23s; animation-direction: alternate-reverse }
+@keyframes drift { from { transform: translate(-36vmin, -16vmin) } to { transform: translate(36vmin, 16vmin) scale(1.2) } }
+.aura::after { content: ''; position: absolute; inset: 0; background: radial-gradient(rgba(255,255,255,.09) 1px, transparent 1.5px) 0 0 / 28px 28px; mask: radial-gradient(62% 62% at 50% 46%, #000, transparent) }
+.ghost { position: fixed; inset: 0 0 8vh; display: grid; place-items: center; overflow: hidden; pointer-events: none }
+.ghost span { font-family: var(--display); font-weight: 800; line-height: 1; white-space: nowrap; text-transform: uppercase; background: linear-gradient(color-mix(in srgb, var(--accent) 26%, transparent), color-mix(in srgb, var(--accent) 5%, transparent)); -webkit-background-clip: text; background-clip: text; color: transparent; transform: translate(calc(var(--px, 0) * -3vmin), calc(var(--py, 0) * -2vmin)); animation: ghost-in .8s cubic-bezier(.2,.8,.2,1) backwards }
+@keyframes ghost-in { from { opacity: 0; scale: 1.08 } }
+
+.stage { --w: min(560px, 86vw, calc((100dvh - 150px) / 1.4)); position: relative; flex: none; width: var(--w); height: calc(var(--w) * 1.4); perspective: calc(var(--w) * 3); container-type: inline-size; cursor: grab; touch-action: none }
+.stage:active { cursor: grabbing }
+.floor { position: absolute; left: 10%; right: 10%; bottom: -5%; height: 9%; border-radius: 50%; background: var(--floor, #000); opacity: var(--floor-o, .75); filter: blur(4cqw); transform: scaleX(calc(.25 + .75 * var(--cos, 1))) }
+.card { position: absolute; inset: 0; transform-style: preserve-3d; transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) }
+.edge { position: absolute; inset: 0; border-radius: 4.4cqw; background: var(--edge); transform: translateZ(calc(var(--i) * .13cqw)) }
+.face { position: absolute; inset: 0; border-radius: 4.4cqw; overflow: hidden; isolation: isolate; backface-visibility: hidden; -webkit-backface-visibility: hidden; transform: translateZ(.5cqw) }
+.face.back { transform: rotateY(180deg) translateZ(.5cqw) }
+/* A layer that really floats above the card. Faces flatten their children, so it lives beside them. */
+.pop { position: absolute; inset: 0; pointer-events: none; backface-visibility: hidden; -webkit-backface-visibility: hidden; transform: translateZ(7cqw) }
+.pop.b { transform: rotateY(180deg) translateZ(7cqw) }
+
+.holo, .glitter, .glare { position: absolute; inset: 0; pointer-events: none; z-index: 10 }
+.holo { mix-blend-mode: color-dodge; opacity: calc(var(--holo, .6) * (.35 + .65 * var(--tilt, 0)));
+  background-image:
+    repeating-linear-gradient(calc(108deg + var(--hue, 0) * .25deg), #ff2e63 0%, #ffc22e 3.5%, #2eff9a 7%, #2ec4ff 10.5%, #9a5cff 14%, #ff2e63 17.5%),
+    repeating-linear-gradient(-32deg, #111 0%, #8a8a8a 1.6%, #111 3.2%);
+  background-size: 260% 260%, 170% 170%;
+  background-position: var(--mx, 50%) var(--my, 50%), calc(100% - var(--mx, 50%)) var(--my, 50%);
+  background-blend-mode: hard-light;
+  filter: brightness(.62) contrast(1.5);
+  mask: radial-gradient(farthest-corner at var(--mx, 50%) var(--my, 50%), #000 8%, transparent 78%) }
+.glitter { mix-blend-mode: color-dodge; opacity: calc(var(--glit, .8) * (.3 + .7 * var(--tilt, 0)));
+  background: linear-gradient(calc(var(--hue, 0) * 1deg + 60deg), #ff7ad9, #ffe27a, #7affc4, #7ad0ff, #c58aff, #ff7ad9);
+  mask: var(--specks), radial-gradient(farthest-corner at var(--mx, 50%) var(--my, 50%), #000 10%, transparent 70%);
+  mask-composite: intersect }
+.glare { z-index: 30; mix-blend-mode: soft-light; opacity: calc(.45 + .55 * var(--tilt, 0));
+  background: radial-gradient(farthest-corner at var(--mx, 50%) var(--my, 50%), rgba(255,255,255,.8), rgba(255,255,255,.16) 30%, rgba(0,0,0,.3) 88%) }
+
+/* Materials: metal and oil-slick gradients that slide as the card tilts. Use them behind text or through a mask. */
+.slide { background-size: 280% 280%; background-position: var(--mx, 50%) var(--my, 50%) }
+.film { background-image: linear-gradient(115deg, #0ff0c8, #2f7bff 16%, #8a3dff 32%, #ff3dab 48%, #ff8a3d 64%, #ffe45c 80%, #3dff8a 92%, #0ff0c8) }
+.chrome { background-image: linear-gradient(112deg, #fff 0%, #a9b4dc 14%, #2a2f55 26%, #f4f6ff 36%, #fff 50%, #8d98c8 62%, #1f2346 74%, #e8ecff 86%, #fff 100%) }
+.clip-text { -webkit-background-clip: text; background-clip: text; color: transparent }
+.ring { mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0) }
+.masked { mask: var(--m) center / 100% 100% no-repeat }
+[data-fit] { display: inline-block; white-space: nowrap }
+
+/* The dock: a mini card for each design, then Flip and Download. It fades away so screenshots stay clean. */
+.dock { position: relative; display: flex; gap: 2px; padding: 6px; border: 1px solid rgba(255,255,255,.13); border-radius: 18px; background: rgba(14,14,20,.62); backdrop-filter: blur(18px) saturate(1.4); -webkit-backdrop-filter: blur(18px) saturate(1.4); box-shadow: 0 12px 40px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.08); transition: opacity .3s; animation: rise .7s 1.1s cubic-bezier(.2,.8,.2,1) backwards }
+@keyframes rise { from { opacity: 0; transform: translateY(18px) } }
+.quiet .dock:not(:has(:focus-visible)) { opacity: 0 }
+.dock button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; min-width: 66px; min-height: 44px; padding: 7px 8px 6px; border: 0; border-radius: 13px; background: none; color: #c4c4ce; font: 600 12px/1 system-ui, -apple-system, 'Segoe UI', sans-serif; cursor: pointer; touch-action: manipulation; transition: background .15s, color .15s, transform .15s, filter .15s }
+.dock button:hover { background: rgba(255,255,255,.08); color: #fff }
+.dock button:active { transform: scale(.95) }
+.dock button[aria-pressed=true] { background: rgba(255,255,255,.1); color: #fff }
+.dock button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px }
+.dock svg { width: 24px; height: 36px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round }
+.dock .busy svg { animation: spin .9s linear infinite }
+@keyframes spin { to { transform: rotate(360deg) } }
+.mini { position: relative; width: 26px; height: 36px; border-radius: 5px; box-shadow: inset 0 0 0 1px rgba(255,255,255,.28); transition: transform .25s cubic-bezier(.2,.8,.2,1), box-shadow .25s }
+.mini::after { content: ''; position: absolute; inset: 7px 3px; background: var(--ink, #fff); mask: var(--spark) center / 100% 100% no-repeat }
+.dock button:hover .mini { transform: translateY(-3px) rotate(-6deg) }
+[aria-pressed=true] .mini { box-shadow: 0 0 0 2px var(--accent), 0 0 16px var(--accent) }
+[data-id=phosphor] .mini { --ink: #ffb347; background: #150e05 }
+[data-id=prism] .mini { --ink: #fff; background: conic-gradient(from 20deg, #ff5fd2, #8a6bff, #39d0ff, #3dffb5, #f7ff6b, #ff9d5c, #ff5fd2) }
+[data-id=obsidian] .mini { --ink: #ff7ad0; background: #101016 }
+[data-id=horizon] .mini { --ink: #170a45; background: linear-gradient(#ffd35c, #ff3fa4 70%, #4a1280) }
+[data-id=volt] .mini { --ink: #0a0b07; background: #d9ff2a }
+.dock .sep { width: 1px; margin: 10px 5px; background: rgba(255,255,255,.14) }
+#save { min-width: 82px; background: var(--accent); color: #0b0b10 }
+#save:hover { filter: brightness(1.12) }
+.toast { position: fixed; left: 50%; top: 20px; max-width: min(92vw, 460px); padding: 10px 16px; border-radius: 12px; background: #1b1b22; box-shadow: 0 8px 30px rgba(0,0,0,.5); font-size: 14px; text-align: center; transform: translateX(-50%) }
+.toast:empty { display: none }
+@media (max-width: 600px) {
+  .ghost { inset: 3dvh 0 auto }
+  .dock { gap: 0; padding: 4px; max-width: calc(100vw - 8px) }
+  .dock button, #save { width: 44px; min-width: 0; padding: 6px 2px }
+  .dock .sep { flex: none; margin: 10px 3px }
+  .dock button span { display: none }
+  .dock svg { height: 30px }
+  .mini { width: 22px; height: 30px }
+  .mini::after { inset: 6px 2px }
+}
+
+/* ─── Phosphor: an amber CRT, your spark as ASCII art ─── */
+[data-design=phosphor] { --base: #0b0602; --a1: #8a4f10; --a2: #4a2606; --accent: #ffb347; --display: VT323, monospace; --edge: linear-gradient(160deg, #c98a39, #4a2f0d); --floor: #ff9a2e; --floor-o: .28; --holo: .5; --glit: .35 }
+.ph { position: absolute; inset: 0; padding: 4.4cqw 5.4cqw; background: radial-gradient(115% 82% at 50% 38%, #241708 0%, #0f0a04 72%, #070402 100%); box-shadow: inset 0 0 0 .55cqw #6b4413; color: #ffb347; font-family: VT323, 'Courier New', monospace; font-variant-ligatures: none; text-shadow: calc(var(--px, 0) * .4cqw) 0 rgba(255,40,90,.55), calc(var(--px, 0) * -.4cqw) 0 rgba(60,200,255,.55), 0 0 1.5cqw rgba(255,160,60,.55) }
+.ph-box { position: relative; display: flex; flex-direction: column; height: 100%; padding: 3.4cqw 3.6cqw 2.4cqw; border: .3cqw solid #a86f28; border-radius: 1.4cqw }
+.ph-tab { position: absolute; top: -2.3cqw; padding: 0 1.2cqw; background: #150e05; font-size: 3.5cqw; line-height: 1.25 }
+.ph-tab.l { left: 3cqw } .ph-tab.r { right: 3cqw }
+.ph-cmd { font-size: 3.4cqw; line-height: 1.1; color: #c98a39 }
+.ph-name { font-size: 15cqw; line-height: .92; color: #ffe2b0; text-transform: uppercase; overflow: hidden }
+.ph-role { font-size: 3.4cqw; line-height: 1.1 }
+.ph-mid { position: relative; flex: 1; min-height: 0; display: grid; place-items: center }
+.ph-art { font: 700 1.56cqw/1 'JetBrains Mono', Consolas, monospace; font-variant-ligatures: none; color: #ffc875; transform: translate(calc(var(--px, 0) * -1.2cqw), calc(var(--py, 0) * -1.2cqw)) }
+.ph-tier { position: absolute; right: 0; bottom: 1cqw; padding: 0 1.4cqw; background: #ffb347; color: #150e05; font-size: 3.6cqw; line-height: 1.2; text-shadow: none }
+.ph-rows { display: grid; grid-template-columns: 1fr 1fr; gap: .1cqw 4cqw; margin-top: .8cqw; font-size: 3.7cqw; line-height: 1.08 }
+.ph-rows div { display: flex; align-items: baseline; min-width: 0; gap: .9cqw }
+.ph-rows i { flex: 1; min-width: 1cqw; border-bottom: .34cqw dotted #7f5420; transform: translateY(-.5cqw) }
+.ph-rows b { font-weight: 400; color: #ffe2b0; white-space: nowrap }
+.ph-heat { display: flex; align-items: center; gap: 2.4cqw; margin-top: 1.6cqw }
+.ph-grid { display: grid; grid-auto-flow: column; grid-template-rows: repeat(7, 1.36cqw); grid-auto-columns: 1.36cqw; gap: .24cqw }
+.ph-grid i { background: #ffb347; opacity: var(--a); box-shadow: 0 0 .7cqw rgba(255,160,60,calc(var(--a) * .7)) }
+.ph-heat span { font-size: 3.2cqw; line-height: 1.05; color: #c98a39 }
+.cursor { display: inline-block; width: .55em; height: .95em; margin-left: .15em; background: currentColor; vertical-align: -.12em; animation: blink 1.1s steps(2) infinite }
+@keyframes blink { 50% { opacity: 0 } }
+.ph-scan { position: absolute; inset: 0; z-index: 20; pointer-events: none; background: repeating-linear-gradient(0deg, rgba(0,0,0,.2) 0 .3cqw, transparent .3cqw .72cqw); box-shadow: inset 0 0 8cqw 0 rgba(0,0,0,.6) }
+.ph-roll { position: absolute; left: 0; right: 0; height: 26cqw; z-index: 21; pointer-events: none; background: linear-gradient(transparent, rgba(255,190,110,.07), transparent); animation: roll 7s linear infinite }
+@keyframes roll { from { top: -26cqw } to { top: 140cqw } }
+.ph-field { position: absolute; left: 0; top: 0; font: 700 1.7cqw/1 'JetBrains Mono', Consolas, monospace; font-variant-ligatures: none; color: #6b4413; white-space: pre; text-shadow: none }
+.ph-field b { color: #ffb347; font-weight: 700; text-shadow: 0 0 1cqw rgba(255,160,60,.6) }
+.ph-plate { position: absolute; left: 50%; bottom: 9cqw; transform: translateX(-50%); padding: 1cqw 3.4cqw 1.6cqw; border: .3cqw solid #ffb347; background: #0c0803; color: #ffe2b0; text-align: center; white-space: nowrap }
+.ph-plate strong { display: block; font-weight: 400; font-size: 9.4cqw; line-height: .95 }
+.ph-plate span { font-size: 3cqw; color: #c98a39 }
+
+/* ─── Prism: full holographic foil, a chrome spark floating above it, black ink and a smoked stats panel ─── */
+[data-design=prism] { --base: #07070f; --a1: #5a2fd0; --a2: #0a7d96; --accent: #b79bff; --display: Unbounded, sans-serif; --edge: linear-gradient(160deg, #fff, #8fa0d0 30%, #ff7ad9 55%, #5cf2ff 80%, #fff); --floor: #7a5cff; --floor-o: .4; --glit: 1 }
+.pr { position: absolute; inset: 0; color: #08081a; font-family: 'Space Grotesk', system-ui, sans-serif }
+.pr-foil { position: absolute; inset: 0; box-shadow: inset 0 0 12cqw rgba(40,10,120,.4); background: conic-gradient(from calc(var(--hue, 0) * 1.3deg + 20deg) at var(--mx, 50%) calc(var(--my, 50%) - var(--dy, 23%)), #ff5fd2, #8a6bff, #39d0ff, #3dffb5, #f7ff6b, #ff9d5c, #ff5fd2, #a56bff, #39d0ff, #ff5fd2) }
+.pr-rays { position: absolute; inset: 0; mix-blend-mode: overlay; background: repeating-conic-gradient(from calc(var(--hue, 0) * .4deg) at 50% var(--cy, 27%), transparent 0, rgba(255,255,255,.9) .3deg .6deg, transparent .9deg 2.2deg, rgba(20,0,90,.5) 2.6deg 2.9deg, transparent 3.3deg 5deg) }
+.pr-streak { position: absolute; inset: 0; mix-blend-mode: soft-light; background: conic-gradient(from calc(var(--hue, 0) * 2deg + 20deg) at var(--mx, 50%) calc(var(--my, 50%) - var(--dy, 23%)), transparent 0 8%, #fff 11%, transparent 15% 42%, #fff 47%, transparent 52% 76%, #fff 80%, transparent 85%) }
+.pr-shadow { position: absolute; left: 50%; top: var(--st, 38cqw); width: var(--ss, 72cqw); height: var(--ss, 72cqw); margin: calc(var(--ss, 72cqw) / -2); opacity: .55; filter: blur(1cqw); transform: translate(calc(var(--px, 0) * -3cqw), calc(1.6cqw + var(--py, 0) * -3cqw)) }
+.pr-shadow i { width: 100%; height: 100%; background: #1a0a55 }
+.pr-frame { position: absolute; inset: 0; z-index: 11; padding: 1.5cqw; border-radius: 4.4cqw; pointer-events: none }
+.pr-line { position: absolute; inset: 1.5cqw; z-index: 11; border: .2cqw solid rgba(8,8,26,.75); border-radius: 3cqw; pointer-events: none }
+.pr-star { position: absolute; z-index: 9; filter: drop-shadow(0 0 .8cqw #fff); animation: twinkle 3.4s ease-in-out infinite; animation-delay: var(--d, 0s) }
+@keyframes twinkle { 50% { transform: scale(.55) rotate(45deg); opacity: .55 } }
+.pr-top { position: absolute; z-index: 12; left: 5.4cqw; right: 5.4cqw; top: 5.2cqw; display: flex; justify-content: space-between; align-items: center; font-weight: 700; font-size: 2.6cqw; letter-spacing: .08em; text-transform: uppercase }
+.pr-tier { padding: .7cqw 2.2cqw; border-radius: 3cqw; background: #08081a; color: #fff }
+.pr-id { position: absolute; z-index: 12; left: 5.4cqw; right: 5.4cqw; top: 73.4cqw }
+.pr-name { font-family: Unbounded, system-ui, sans-serif; font-weight: 800; font-size: 12cqw; line-height: 1.08; letter-spacing: -.04em; text-shadow: 0 .18cqw 0 rgba(255,255,255,.55) }
+.pr-role { display: flex; align-items: center; gap: 1.4cqw; margin-top: .6cqw; font-weight: 700; font-size: 3cqw; letter-spacing: .06em; text-transform: uppercase }
+.pr-role svg { width: 2.2cqw; height: 2.2cqw; fill: currentColor }
+.pr-panel { position: absolute; z-index: 12; left: 4.2cqw; right: 4.2cqw; bottom: 4.2cqw; padding: 2.5cqw 3.2cqw 2.2cqw; border-radius: 2.6cqw; background: linear-gradient(180deg, #0d0d22, #05050f); box-shadow: 0 0 0 .22cqw rgba(255,255,255,.7), 0 1cqw 3cqw rgba(30,10,90,.55); color: #f5f6ff }
+.pr-panel dt { font-weight: 500; font-size: 2.2cqw; letter-spacing: .03em; color: #aeb0d2; white-space: nowrap }
+.pr-panel dd { min-width: 0; overflow: hidden; font-weight: 700 }
+.pr-mega { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3cqw; padding-bottom: 1.4cqw; border-bottom: .14cqw solid rgba(255,255,255,.2) }
+.pr-mega dd { font-family: Unbounded, system-ui, sans-serif; font-weight: 800; font-size: 9cqw; line-height: 1.12; letter-spacing: -.05em }
+.pr-text { background-image: linear-gradient(100deg, #ff7ae0, #b39bff 20%, #5ce1ff 40%, #6fffc0 60%, #fff27a 80%, #ff9d6b); background-size: 240% 100%; background-position: var(--mx, 50%) 0 }
+.pr-small { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1.1cqw 2cqw; margin-top: 1.3cqw }
+.pr-small div { min-width: 0 }
+.pr-small dd { font-size: 3.9cqw; line-height: 1.14 }
+.pr-foot { display: flex; justify-content: space-between; margin-top: 1.2cqw; font-size: 2.1cqw; color: #aeb0d2 }
+.pr-pop { position: absolute; left: 50%; top: var(--st, 38cqw); width: var(--ss, 72cqw); height: var(--ss, 72cqw); margin: calc(var(--ss, 72cqw) / -2); isolation: isolate; filter: drop-shadow(0 .25cqw .25cqw rgba(15,5,60,.55)) }
+.pr-pop svg { position: absolute; inset: 0; width: 100%; height: 100% }
+.pr-pop i { position: absolute; inset: 0 }
+.pr-sheen { mix-blend-mode: screen; background: linear-gradient(115deg, transparent 38%, rgba(255,255,255,.95) 46%, rgba(120,225,255,.8) 49%, rgba(255,120,225,.8) 52%, transparent 60%); background-size: 240% 240%; background-position: var(--mx, 50%) var(--my, 50%) }
+.pr-tint { mix-blend-mode: overlay; opacity: .55; background: conic-gradient(from calc(var(--hue, 0) * 1deg), #ff5fd2, #8a6bff, #39d0ff, #3dffb5, #f7ff6b, #ff9d5c, #ff5fd2) }
+.pr-b { --dy: 0%; --cy: 50%; --st: 70cqw; --ss: 54cqw }
+.pr-disc { position: absolute; left: 50%; top: 70cqw; width: 88cqw; height: 88cqw; margin: -44cqw; z-index: 9 }
+.pr-disc svg { position: absolute; inset: 0; width: 100%; height: 100% }
+.pr-corner { position: absolute; z-index: 12; font-weight: 700; font-size: 2.5cqw; letter-spacing: .04em }
+
+/* ─── Obsidian: a black card, the spark a gloss you only catch when the light hits it ─── */
+[data-design=obsidian] { --base: #050507; --a1: #4b3a8f; --a2: #8a2a66; --accent: #ff7ad0; --display: Michroma, sans-serif; --edge: linear-gradient(160deg, #0ff0c8, #6a4cff 35%, #ff3dab 60%, #ffb45c 85%, #0ff0c8); --floor-o: .9 }
+.ob { position: absolute; inset: 0; color: #eeeef4; font-family: 'Space Grotesk', system-ui, sans-serif; background: repeating-linear-gradient(45deg, rgba(255,255,255,.022) 0 .34cqw, transparent .34cqw .68cqw), repeating-linear-gradient(-45deg, rgba(0,0,0,.4) 0 .34cqw, transparent .34cqw .68cqw), radial-gradient(90% 70% at 50% 34%, #1b1b23 0%, #0b0b10 70%, #060609 100%) }
+.ob-art { position: absolute; left: 50%; top: var(--at, 42cqw); width: var(--as, 122cqw); height: var(--as, 122cqw); margin: calc(var(--as, 122cqw) / -2); transform: translate(calc(var(--px, 0) * -1.4cqw), calc(var(--py, 0) * -1.4cqw)) }
+.ob-art i { position: absolute; inset: 0 }
+.ob-gloss { background: linear-gradient(135deg, #34343f 0%, #1b1b23 45%, #2b2b35 100%) }
+.ob-film { mask: var(--m) center / 100% 100% no-repeat, radial-gradient(circle var(--lr, 46cqw) at var(--mx, 50%) var(--my, 50%), #000 12%, transparent 100%); mask-composite: intersect }
+.ob-shade { position: absolute; left: 0; right: 0; bottom: 0; height: 74cqw; background: linear-gradient(transparent, rgba(9,9,13,.94) 26%) }
+.ob-line { position: absolute; inset: 2.2cqw; z-index: 11; padding: .22cqw; border-radius: 2.8cqw; pointer-events: none }
+.ob-top { position: absolute; z-index: 12; left: 6.4cqw; right: 6.4cqw; top: 6.4cqw; display: flex; justify-content: space-between; align-items: center; font: 2.15cqw Michroma, system-ui, sans-serif; letter-spacing: .08em; text-transform: uppercase }
+.ob-tier { padding: .6cqw 1.8cqw; border-radius: .9cqw; color: #08080c; font: 700 2.5cqw 'Space Grotesk', system-ui, sans-serif; filter: brightness(1.25) }
+.ob-name { position: absolute; z-index: 12; left: 6.4cqw; right: 6.4cqw; top: 76.6cqw; font: 9cqw/1.2 Michroma, system-ui, sans-serif; letter-spacing: -.03em; text-shadow: 0 -.14cqw 0 rgba(255,255,255,.28), 0 .22cqw .3cqw rgba(0,0,0,.9) }
+.ob-role { position: absolute; z-index: 12; left: 6.4cqw; top: 88.4cqw; font-weight: 500; font-size: 2.9cqw; letter-spacing: .03em; color: #b4b4c2 }
+.ob-table { position: absolute; z-index: 12; left: 6.4cqw; right: 6.4cqw; top: 94.2cqw; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 5cqw; border-top: .14cqw solid rgba(255,255,255,.22) }
+.ob-table div { display: flex; justify-content: space-between; align-items: baseline; min-width: 0; padding: 1cqw 0 1.05cqw; border-bottom: .14cqw solid rgba(255,255,255,.11) }
+.ob-table dt { font-weight: 500; font-size: 2.5cqw; color: #a0a0b0; white-space: nowrap }
+.ob-table dd { font-weight: 500; font-size: 3.3cqw; line-height: 1.1; white-space: nowrap }
+.ob-foot { position: absolute; z-index: 12; left: 6.4cqw; right: 6.4cqw; bottom: 5.4cqw; display: flex; justify-content: space-between; font: 2cqw Michroma, system-ui, sans-serif; color: #a0a0b0 }
+.ob-b { --at: 78cqw; --as: 72cqw; --lr: 60cqw }
+.ob-stripe { position: absolute; left: 0; right: 0; top: 11cqw; height: 19cqw; background: linear-gradient(180deg, #020203, #15151b 46%, #020203); box-shadow: 0 .14cqw 0 rgba(255,255,255,.1) }
+.ob-word { position: absolute; z-index: 12; left: 0; right: 0; top: 118cqw; text-align: center; font: 3.5cqw Michroma, system-ui, sans-serif; letter-spacing: .16em }
+.ob-micro { position: absolute; z-index: 12; left: 0; right: 0; bottom: 6.4cqw; text-align: center; font-size: 2.1cqw; color: #a0a0b0 }
+
+/* ─── Horizon: a neon sun over a moving grid, with chrome lettering ─── */
+[data-design=horizon] { --base: #07030f; --a1: #8a1f7a; --a2: #3a1d8f; --accent: #ff5fc4; --display: Orbitron, sans-serif; --edge: linear-gradient(160deg, #ff3fa4, #7a3cff 50%, #22e6ff); --floor: #ff3fa4; --floor-o: .38; --holo: .4 }
+.hz { position: absolute; inset: 0; color: #fff; font-family: Rajdhani, system-ui, sans-serif; background: linear-gradient(180deg, #07031c 0%, #170a45 30%, #4a1280 45%, #b8227f 53%, #ff6a55 57.2%) }
+.hz-stars { position: absolute; left: 0; right: 0; top: 0; height: 62cqw; background: var(--stars); mask: linear-gradient(#000 40%, transparent) }
+.hz-sunwrap { position: absolute; left: 50%; top: 44cqw; width: 64cqw; height: 64cqw; margin: -32cqw; filter: drop-shadow(0 0 3.4cqw rgba(255,90,150,.85)); transform: translate(calc(var(--px, 0) * .9cqw), calc(var(--py, 0) * .9cqw)) }
+.hz-sun { width: 100%; height: 100%; border-radius: 50%; background: linear-gradient(180deg, #fff7a0 0%, #ffd35c 28%, #ff8a4a 52%, #ff3f8e 78%, #c81f8a 100%); mask: linear-gradient(#000 50%, transparent 50% 53%, #000 53% 61%, transparent 61% 65%, #000 65% 72%, transparent 72% 77%, #000 77% 84%, transparent 84% 90%, #000 90%) }
+.hz-sparkwrap { position: absolute; left: 50%; top: 44cqw; width: 48cqw; height: 48cqw; margin: -24cqw; filter: drop-shadow(0 0 .7cqw #22e6ff); transform: translate(calc(var(--px, 0) * -1.3cqw), calc(var(--py, 0) * -1.3cqw)) }
+.hz-sparkwrap i { width: 100%; height: 100%; background: #170a45 }
+.hz-floor { position: absolute; left: 0; right: 0; top: 80cqw; bottom: 0; overflow: hidden; perspective: 30cqw; perspective-origin: 50% 0; background: linear-gradient(#32095f, #0a0420 65%); box-shadow: 0 -.2cqw 1.2cqw #ff6a55 }
+.hz-floor::after { content: ''; position: absolute; inset: 0; background: linear-gradient(#5a1270, transparent 42%) }
+/* A flat floor running away from the camera, moved by transform so the browser doesn't repaint it each frame. */
+.hz-plane { position: absolute; left: -250cqw; right: -250cqw; bottom: 0; height: 300cqw; transform-origin: 50% 100%; transform: rotateX(90deg); background: repeating-linear-gradient(90deg, #22e6ff 0 .4cqw, transparent .4cqw 12cqw), repeating-linear-gradient(0deg, #ff3fa4 0 .5cqw, transparent .5cqw 12cqw); animation: drive 1.5s linear infinite }
+@keyframes drive { to { transform: rotateX(90deg) translateY(12cqw) } }
+.hz-top { position: absolute; z-index: 12; left: 6cqw; right: 6cqw; top: 5.4cqw; display: flex; justify-content: space-between; font: 700 2.3cqw Orbitron, system-ui, sans-serif; letter-spacing: .1em; text-transform: uppercase }
+.hz-top span:last-child { color: #7df3ff }
+.hz-name { position: absolute; z-index: 12; left: 5cqw; right: 5cqw; top: 61.6cqw; text-align: center; font: 900 13.5cqw/1.1 Orbitron, system-ui, sans-serif; text-transform: uppercase; transform: skewX(-8deg); filter: drop-shadow(0 .35cqw 0 #1b0a4f) drop-shadow(0 0 .22cqw #1b0a4f) drop-shadow(0 0 1.5cqw rgba(255,63,164,.7)) }
+.hz-chrome { background-image: linear-gradient(180deg, #fff 0%, #bfe9ff 30%, #4f7cff 48%, #12083a 50%, #ff5fc4 54%, #ffd0f0 78%, #fff 100%) }
+.hz-role { position: absolute; z-index: 12; left: 0; right: 0; top: 81.8cqw; text-align: center; font-weight: 700; font-size: 3.1cqw; letter-spacing: .1em; text-transform: uppercase; text-shadow: 0 0 1cqw #000, 0 0 .4cqw #000 }
+.hz-stats { position: absolute; z-index: 12; left: 6cqw; right: 6cqw; top: 88.4cqw; bottom: 9cqw; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-content: space-evenly; column-gap: 2cqw; padding: .8cqw 3cqw; border: .3cqw solid #22e6ff; border-radius: 1.6cqw; background: rgba(10,4,32,.78); box-shadow: 0 0 1.8cqw rgba(34,230,255,.6), inset 0 0 1.8cqw rgba(34,230,255,.2) }
+.hz-stats div { min-width: 0; overflow: hidden }
+.hz-stats dt { font-weight: 600; font-size: 2.6cqw; line-height: 1.1; letter-spacing: .06em; text-transform: uppercase; color: #7df3ff; white-space: nowrap }
+.hz-stats dd { font: 700 4.2cqw/1.16 Orbitron, system-ui, sans-serif }
+.hz-foot { position: absolute; z-index: 12; left: 6cqw; right: 6cqw; bottom: 3.8cqw; display: flex; justify-content: space-between; font-weight: 600; font-size: 2.6cqw; letter-spacing: .06em; text-transform: uppercase; color: #e6d9ff; text-shadow: 0 0 .8cqw #000, 0 0 .3cqw #000 }
+.hz-word { top: 66cqw; font-size: 11cqw }
+.hz-micro { position: absolute; z-index: 12; left: 0; right: 0; bottom: 5.4cqw; text-align: center; font-weight: 600; font-size: 2.7cqw; letter-spacing: .04em; text-shadow: 0 0 .8cqw #000, 0 0 .3cqw #000 }
+
+/* ─── Volt: acid yellow and black, hazard stripes, oversized type ─── */
+[data-design=volt] { --base: #060704; --a1: #5c6b00; --a2: #2f3a00; --accent: #d9ff2a; --display: Anton, sans-serif; --edge: linear-gradient(160deg, #dfff1f, #7c8f00); --floor: #d9ff2a; --floor-o: .2 }
+.vo { position: absolute; inset: 0; background: #0a0b07; color: #d9ff2a; font-family: 'JetBrains Mono', Consolas, monospace; font-variant-ligatures: none }
+.vo-lime { position: absolute; inset: 0; background: #d9ff2a; clip-path: polygon(0 0, 100% 0, 100% 80cqw, 0 94cqw) }
+.vo-dots { position: absolute; inset: 0; opacity: .6; background-image: radial-gradient(#0a0b07 28%, transparent 30%); background-size: 2.4cqw 2.4cqw; mask: linear-gradient(20deg, #000 0%, transparent 52%) }
+.vo-art { position: absolute; left: 62%; top: 33cqw; width: 96cqw; height: 96cqw; margin: -48cqw; transform: translate(calc(var(--px, 0) * -1.4cqw), calc(var(--py, 0) * -1.4cqw)) }
+.vo-art i { position: absolute; inset: 0 }
+.vo-ink { background: #0a0b07 }
+.vo-film { mask: var(--m) center / 100% 100% no-repeat, radial-gradient(circle 48cqw at var(--mx, 50%) var(--my, 50%), #000 12%, transparent 100%); mask-composite: intersect }
+.vo-hazard { position: absolute; inset: 0; background: repeating-linear-gradient(-45deg, #d9ff2a 0 1.6cqw, #0a0b07 1.6cqw 3.2cqw); clip-path: polygon(0 94cqw, 100% 80cqw, 100% 83.4cqw, 0 97.4cqw) }
+.vo-chip { position: absolute; z-index: 12; padding: .5cqw 1.5cqw; background: #d9ff2a; color: #0a0b07; font-weight: 700; font-size: 2.5cqw; letter-spacing: .05em; text-transform: uppercase }
+.vo-tag { position: absolute; z-index: 12; left: 5.4cqw; top: 10.2cqw; padding: .3cqw 1.6cqw .5cqw; background: #0a0b07; color: #d9ff2a; font: 5.2cqw/1.15 Anton, Impact, sans-serif; letter-spacing: .03em; text-transform: uppercase }
+.vo-name { position: absolute; z-index: 12; left: 5cqw; right: 5cqw; top: 62.6cqw; color: #0a0b07; font: 27cqw/1 Anton, Impact, sans-serif; text-transform: uppercase; transform: rotate(-7.97deg); transform-origin: 0 100%; -webkit-text-stroke: 1.1cqw #d9ff2a; paint-order: stroke fill; text-shadow: calc(var(--px, 0) * .7cqw) 0 rgba(255,0,120,.75), calc(var(--px, 0) * -.7cqw) 0 rgba(0,190,255,.75) }
+.vo-data { position: absolute; z-index: 12; left: 5.4cqw; right: 5.4cqw; top: 99.4cqw; bottom: 4.6cqw; display: flex; flex-direction: column; justify-content: space-between }
+.vo-role { font: 4.6cqw/1.15 Anton, Impact, sans-serif; letter-spacing: .03em; text-transform: uppercase }
+.vo-table { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 4cqw }
+.vo-table div { display: flex; justify-content: space-between; align-items: baseline; min-width: 0; padding: .36cqw 0; border-bottom: .14cqw solid rgba(217,255,42,.26) }
+.vo-table dt { font-weight: 500; font-size: 2.5cqw; color: #aec23f; white-space: nowrap }
+.vo-table dd { font-weight: 700; font-size: 2.85cqw; line-height: 1.2; white-space: nowrap }
+.vo-bottom { display: flex; justify-content: space-between; align-items: flex-end; gap: 3cqw }
+.vo-bar { display: block; width: 36cqw; height: 6.2cqw; flex: none; fill: #d9ff2a }
+.vo-warn { font-weight: 700; font-size: 2.3cqw; line-height: 1.22; text-align: right; text-transform: uppercase }
+.vo-b .vo-art { left: 50%; top: 53cqw; width: 88cqw; height: 88cqw; margin: -44cqw }
+.vo-b .vo-ink { background: #d9ff2a }
+.vo-band { position: absolute; left: 0; right: 0; height: 5cqw; background: repeating-linear-gradient(-45deg, #d9ff2a 0 1.6cqw, #0a0b07 1.6cqw 3.2cqw) }
+.vo-word { position: absolute; z-index: 12; left: 5.4cqw; right: 5.4cqw; top: 95.6cqw; text-align: center; font: 19cqw/1.1 Anton, Impact, sans-serif; text-transform: uppercase }
+.vo-b .vo-bottom { position: absolute; z-index: 12; left: 5.4cqw; right: 5.4cqw; bottom: 9.4cqw }
+
+@media (prefers-reduced-motion: reduce) { .cursor, .ph-roll, .pr-star, .hz-plane, .aura i, .ghost span, .dock { animation: none } }
+</style>
+</head>
+<body>
+<div class="aura" aria-hidden="true"><i></i><i></i></div>
+<div class="ghost" aria-hidden="true"></div>
+<main class="stage" role="img">
+  <div class="floor"></div>
+  <div class="card"></div>
+</main>
+<nav class="dock" aria-label="Card controls"></nav>
+<p class="toast" role="status"></p>
+
+<script>
+const S = {"name":"Ada Lovelace","since":"Mar 2026","year":2026,"tokens":4820000000,"output":38400000,"sessions":212,"prompts":6430,"toolCalls":41200,"activeDays":96,"bestStreak":17,"topModel":"Opus 5.5","topTool":"Edit","peakHour":22,"activity":[0,23,44,60,71,76,73,64,51,34,15,0,0,0,0,0,0,0,11,29,47,61,72,76,73,64,48,29,6,0,0,0,0,0,0,0,0,0,0,0,13,24,30,29,22,10,0,0,0,0,0,0,0,0,0,0,0,11,34,53,66,74,75,69,58,42,24,6,0,0,0,0,0,0,2,20,38,55,67,75,75,69,57,39,18,0,0,0,0,0,0,0,0,0,0,0,6,19,28,30,26,16,2,0,0,0,0,0,0,0,0,0,0,0,23,43,60,71,75,73,64,50,33,15,0,0,0,0,0,0,0,11,29,47,62,72,76,73,64,49,29,6,0,0,0,0,0,0,0,0,0,0,0,13,24,30,29,22,10,0,0,0,0,0,0,0,0,0,0,0,11,33,52,66,74,75,69,58,42,24,6,0],"title":"The Author","shift":"Night Owl","rarity":"Epic","serial":"3278"};
+
+const TAU = Math.PI * 2;
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const esc = v => String(v).replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
+const abbr = n => {
+  for (const [v, u] of [[1e12, 'T'], [1e9, 'B'], [1e6, 'M'], [1e3, 'K']]) if (n >= v) return (n / v >= 100 ? (n / v).toFixed(0) : (n / v).toFixed(1)) + u;
+  return String(n);
+};
+const num = n => n < 1e4 ? n.toLocaleString('en-US') : abbr(n);
+const hour12 = h => h === null ? 'None yet' : `${h % 12 || 12} ${h < 12 ? 'AM' : 'PM'}`;
+
+const short = v => esc(v.length > 14 ? `${v.slice(0, 13)}…` : v); // gateway model IDs can run long
+const ROWS = s => [
+  ['Tokens', abbr(s.tokens)], ['Output', abbr(s.output)], ['Sessions', num(s.sessions)],
+  ['Prompts', num(s.prompts)], ['Tool calls', num(s.toolCalls)], ['Active days', num(s.activeDays)],
+  ['Best streak', `${s.bestStreak}d`], ['Top model', short(s.topModel)], ['Top tool', short(s.topTool)], ['Peak hour', hour12(s.peakHour)],
+];
+const cell = (label, value, fit) => `<div><dt>${label}</dt><dd><span data-fit="${fit}">${value}</span></dd></div>`;
+const line = ([label, value]) => `<div><dt>${label}</dt><dd>${value}</dd></div>`;
+
+// The spark: an original hand-cut asterisk, not a copy of any official logo file. Swap it here.
+const SPARK = [1, .8, .94, .72, 1, .84, .76, .96, .82, 1, .74, .9];
+const JITTER = [0, .12, -.08, .1, -.05, .14, -.1, .06, .11, -.12, .07, -.06];
+const TIP = 3.1;
+const rays = () => SPARK.map((l, i) => ({ a: (i + JITTER[i]) / SPARK.length * TAU - TAU / 4, R: 10 + l * 36 }));
+const pt = (r, a) => `${(50 + r * Math.cos(a)).toFixed(2)} ${(50 + r * Math.sin(a)).toFixed(2)}`;
+const rayPath = ({ a, R }) => `M${pt(1.5, a - 1.2)}L${pt(R, a - TIP / R)}A${TIP} ${TIP} 0 0 1 ${pt(R, a + TIP / R)}L${pt(1.5, a + 1.2)}Z`;
+const svgUrl = body => `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" preserveAspectRatio="none">${body}</svg>`).replace(/'/g, '%27')}")`;
+const SPARK_MASK = svgUrl(`<path d="${rays().map(rayPath).join('')}"/><circle cx="50" cy="50" r="3.2"/>`);
+const noiseUrl = (freq, matrix, size = 240) => `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="${freq}" numOctaves="2" stitchTiles="stitch"/><feColorMatrix values="${matrix}"/></filter><rect width="100%" height="100%" filter="url(#n)"/></svg>`)}")`;
+const rootStyle = document.documentElement.style;
+rootStyle.setProperty('--spark', SPARK_MASK);
+rootStyle.setProperty('--specks', noiseUrl(.9, '0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 14 -8.8'));
+rootStyle.setProperty('--stars', noiseUrl(.5, '0 0 0 0 1 0 0 0 0 .95 0 0 0 0 .85 0 0 0 16 -12.6', 420));
+const sparkMask = (cls = '') => `<i class="${cls} masked" style='--m:${SPARK_MASK}'></i>`;
+const filmMask = cls => `<i class="${cls} film slide" style='--m:${SPARK_MASK}'></i>`;
+
+// Each ray gets its own gradient across its width, so it reads as a polished metal bar.
+function chromeSpark(id) {
+  const stops = [[0, '#39406e'], [.2, '#eef2ff'], [.38, '#fff'], [.5, '#9aa6d6'], [.58, '#15183a'], [.78, '#2b3062'], [.92, '#c6d0f5'], [1, '#fff']]
+    .map(([o, c]) => `<stop offset="${o}" stop-color="${c}"/>`).join('');
+  const rs = rays();
+  const grads = rs.map(({ a, R }, i) => {
+    const m = R * .6, x = 50 + m * Math.cos(a), y = 50 + m * Math.sin(a), nx = -Math.sin(a) * TIP * .9, ny = Math.cos(a) * TIP * .9;
+    return `<linearGradient id="${id}${i}" gradientUnits="userSpaceOnUse" x1="${(x - nx).toFixed(2)}" y1="${(y - ny).toFixed(2)}" x2="${(x + nx).toFixed(2)}" y2="${(y + ny).toFixed(2)}">${stops}</linearGradient>`;
+  }).join('');
+  const paths = rs.map((r, i) => `<path d="${rayPath(r)}" fill="url(#${id}${i})" stroke="#fff" stroke-opacity=".7" stroke-width=".18"/>`).join('');
+  return `<div class="pr-pop"><svg viewBox="0 0 100 100" aria-hidden="true"><defs>${grads}<radialGradient id="${id}h" cx=".38" cy=".32" r=".8"><stop offset="0" stop-color="#fff"/><stop offset=".45" stop-color="#b8c2ea"/><stop offset="1" stop-color="#20244a"/></radialGradient></defs>${paths}<circle cx="50" cy="50" r="4.4" fill="url(#${id}h)" stroke="#fff" stroke-opacity=".7" stroke-width=".18"/></svg>${sparkMask('pr-tint')}${sparkMask('pr-sheen')}</div>`;
+}
+
+// How strongly a point sits inside a ray: 0 outside, near 1 on the ray's center line.
+function sparkField(x, y, rs) {
+  const dx = x - 50, dy = y - 50, r = Math.hypot(dx, dy), th = Math.atan2(dy, dx);
+  let best = 0;
+  for (const { a, R } of rs) {
+    const along = r * Math.cos(th - a), off = Math.abs(r * Math.sin(th - a));
+    if (along < -2 || along > R + TIP) continue;
+    const half = 1.75 + 1.35 * Math.max(0, along) / R;
+    best = Math.max(best, along > R ? (TIP - Math.hypot(along - R, off)) / TIP : (half - off) / half);
+  }
+  return best;
+}
+const hash01 = (a, b) => { const v = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return v - Math.floor(v); };
+
+function asciiSpark(cols, rows) {
+  const rs = rays(), ramp = ' .:-=+*#%@';
+  let out = '';
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const v = sparkField((c + .5) / cols * 100, (r + .5) / rows * 100, rs);
+      out += v <= 0 ? ' ' : ramp[Math.min(9, 1 + Math.floor(v * 9))];
+    }
+    out += '\n';
+  }
+  return out;
+}
+function asciiField() { // card back: "CLAUDE" fills the spark, faint dots fill the void
+  const rs = rays(), word = 'CLAUDE', cols = 99, rows = 83;
+  let out = '', n = 0;
+  for (let r = 0; r < rows; r++) {
+    let open = false;
+    for (let c = 0; c < cols; c++) {
+      const v = sparkField((c * 1.02 - 50) / .94 + 50, (r * 1.7 - 60) / .94 + 50, rs);
+      const inside = v > .02;
+      if (inside !== open) { out += inside ? '<b>' : '</b>'; open = inside; }
+      const h = hash01(c, r);
+      out += inside ? word[n++ % word.length] : h > .9 ? ':' : h > .62 ? '.' : ' ';
+    }
+    if (open) out += '</b>';
+    out += '\n';
+  }
+  return out;
+}
+
+const STAR = '<path d="M5 0Q5 5 10 5Q5 5 5 10Q5 5 0 5Q5 5 5 0Z"/>';
+const star = (x, y, size, delay) => `<svg class="pr-star" viewBox="0 0 10 10" fill="#fff" style="left:${x}cqw;top:${y}cqw;width:${size}cqw;height:${size}cqw;--d:${delay}s" aria-hidden="true">${STAR}</svg>`;
+function barcode(serial) { // a decorative barcode, unique to the card's serial number
+  let x = 0, bars = '';
+  for (let i = 0; x < 100; i++) {
+    const w = 1 + Math.floor(hash01(+serial + 1, i) * 3);
+    bars += `<rect x="${x}" width="${w}" height="10"/>`;
+    x += w + 1 + Math.floor(hash01(i, +serial + 1) * 2);
+  }
+  return `<svg class="vo-bar" viewBox="0 0 100 10" preserveAspectRatio="none" aria-hidden="true">${bars}</svg>`;
+}
+
+const HOLO = '<i class="holo"></i>', GLITTER = '<i class="glitter"></i>';
+const LEGAL = 'Unofficial fan project. Not affiliated with Anthropic.';
+const prismBase = `<i class="pr-foil"></i><i class="pr-rays"></i><i class="pr-streak"></i>${GLITTER}<div class="pr-shadow">${sparkMask()}</div>`;
+const prismFrame = '<i class="pr-frame chrome slide ring"></i><i class="pr-line"></i>';
+const horizonSky = `<i class="hz-stars"></i><div class="hz-sunwrap"><i class="hz-sun"></i></div><div class="hz-sparkwrap">${sparkMask()}</div><div class="hz-floor"><i class="hz-plane"></i></div>`;
+
+// Add a design: give it a label and front/back markup (plus an optional floating layer), then its CSS above.
+const DESIGNS = {
+  phosphor: {
+    label: 'Phosphor',
+    front: s => {
+      const heat = Math.max(1, ...s.activity);
+      return `<div class="ph"><div class="ph-box">
+        <span class="ph-tab l">claude-card</span><span class="ph-tab r">#${s.serial}</span>
+        <div class="ph-cmd">$ whoami</div>
+        <div class="ph-name"><span data-fit="15">${esc(s.name)}</span></div>
+        <div class="ph-role">${esc(s.title).toLowerCase().replace(/ /g, '-')} / ${esc(s.shift).toLowerCase().replace(/ /g, '-')}</div>
+        <div class="ph-mid"><pre class="ph-art">${asciiSpark(60, 36)}</pre><span class="ph-tier">${esc(s.rarity).toUpperCase()}</span></div>
+        <div class="ph-cmd">$ claude stats</div>
+        <div class="ph-rows">${ROWS(s).map(([l, v]) => `<div><span>${l.toLowerCase()}</span><i></i><b>${v}</b></div>`).join('')}</div>
+        <div class="ph-heat"><div class="ph-grid">${s.activity.map(n => `<i style="--a:${n ? (.25 + .75 * Math.sqrt(n / heat)).toFixed(2) : .08}"></i>`).join('')}</div><span>last 26 weeks<br>since ${esc(s.since).toLowerCase()}<br>$<span class="cursor"></span></span></div>
+      </div></div><i class="ph-scan"></i><i class="ph-roll"></i>${HOLO}`;
+    },
+    back: () => `<div class="ph"><pre class="ph-field">${asciiField()}</pre>
+      <div class="ph-plate"><strong>CLAUDE CARD</strong><span>unofficial fan project / not affiliated with anthropic</span></div>
+      </div><i class="ph-scan"></i><i class="ph-roll"></i>${HOLO}`,
+  },
+  prism: {
+    label: 'Prism',
+    front: s => {
+      const r = ROWS(s);
+      return `<div class="pr">
+        ${prismBase}
+        ${star(9, 15, 4.4, 0)}${star(88, 57, 3.4, 1.1)}${star(8, 60, 2.6, 2)}${star(84, 13, 2.6, .6)}
+        ${prismFrame}
+        <div class="pr-top"><span>Claude Card</span><span class="pr-tier">${esc(s.rarity)}</span></div>
+        <div class="pr-id"><div class="pr-name"><span data-fit="12">${esc(s.name)}</span></div>
+          <div class="pr-role"><span>${esc(s.title)}</span><svg viewBox="0 0 10 10" aria-hidden="true">${STAR}</svg><span>${esc(s.shift)}</span></div></div>
+        <div class="pr-panel">
+          <dl class="pr-mega">${r.slice(0, 2).map(([l, v]) => `<div><dt>${l}</dt><dd><span class="pr-text clip-text" data-fit="9">${v}</span></dd></div>`).join('')}</dl>
+          <dl class="pr-small">${r.slice(2).map(([l, v]) => cell(l, v, 3.9)).join('')}</dl>
+          <div class="pr-foot"><span>No. ${s.serial}</span><span>Since ${esc(s.since)}</span></div>
+        </div>
+      </div>`;
+    },
+    frontPop: () => chromeSpark('pf'),
+    back: s => `<div class="pr pr-b">
+      ${prismBase}
+      <div class="pr-disc"><svg viewBox="0 0 100 100" aria-hidden="true">
+        <defs><path id="ringpath" d="M50 50m-42.6 0a42.6 42.6 0 1 1 85.2 0a42.6 42.6 0 1 1-85.2 0"/></defs>
+        <circle cx="50" cy="50" r="48.6" fill="none" stroke="#08081a" stroke-width=".4"/>
+        <circle cx="50" cy="50" r="37.4" fill="none" stroke="#08081a" stroke-width=".4"/>
+        <text font-family="Unbounded, system-ui" font-weight="800" font-size="5.4" fill="#08081a"><textPath href="#ringpath" textLength="263">CLAUDE CARD ✦ CLAUDE CARD ✦ CLAUDE CARD ✦ </textPath></text>
+      </svg></div>
+      ${prismFrame}
+      <span class="pr-corner" style="left:6cqw;top:5.6cqw">No. ${s.serial}</span>
+      <span class="pr-corner" style="right:6cqw;top:5.6cqw">${s.year}</span>
+      <span class="pr-corner" style="left:0;right:0;bottom:5.6cqw;text-align:center">${LEGAL}</span>
+    </div>`,
+    backPop: () => `<div class="pr-b">${chromeSpark('pb')}</div>`,
+  },
+  obsidian: {
+    label: 'Obsidian',
+    front: s => `<div class="ob">
+      <div class="ob-art">${sparkMask('ob-gloss')}${filmMask('ob-film')}</div>
+      <i class="ob-shade"></i>
+      <i class="ob-line film slide ring"></i>
+      <div class="ob-top"><span>Claude Card</span><span class="ob-tier film slide">${esc(s.rarity)}</span></div>
+      <div class="ob-name"><span data-fit="9">${esc(s.name)}</span></div>
+      <div class="ob-role">${esc(s.title)} / ${esc(s.shift)}</div>
+      <dl class="ob-table">${ROWS(s).map(line).join('')}</dl>
+      <div class="ob-foot"><span>No. ${s.serial}</span><span>Since ${esc(s.since)}</span></div>
+    </div>`,
+    back: () => `<div class="ob ob-b">
+      <i class="ob-stripe"></i>
+      <div class="ob-art">${sparkMask('ob-gloss')}${filmMask('ob-film')}</div>
+      <i class="ob-line film slide ring"></i>
+      <div class="ob-word">Claude Card</div>
+      <div class="ob-micro">${LEGAL}</div>
+    </div>`,
+  },
+  horizon: {
+    label: 'Horizon',
+    front: s => `<div class="hz">
+      ${horizonSky}${HOLO}
+      <div class="hz-top"><span>Claude Card</span><span>${esc(s.rarity)}</span></div>
+      <div class="hz-name"><span class="hz-chrome clip-text" data-fit="13.5">${esc(s.name)}</span></div>
+      <div class="hz-role">${esc(s.title)} / ${esc(s.shift)} / Peak ${hour12(s.peakHour)}</div>
+      <dl class="hz-stats">${ROWS(s).slice(0, 9).map(([l, v]) => cell(l, v, 4.2)).join('')}</dl>
+      <div class="hz-foot"><span>No. ${s.serial}</span><span>Since ${esc(s.since)}</span></div>
+    </div>`,
+    back: () => `<div class="hz">
+      ${horizonSky}${HOLO}
+      <div class="hz-name hz-word"><span class="hz-chrome clip-text" data-fit="11">Claude Card</span></div>
+      <div class="hz-micro">${LEGAL}</div>
+    </div>`,
+  },
+  volt: {
+    label: 'Volt',
+    front: s => `<div class="vo">
+      <div class="vo-lime">
+        <i class="vo-dots"></i>
+        <div class="vo-art">${sparkMask('vo-ink')}${filmMask('vo-film')}</div>
+      </div>
+      <i class="vo-hazard"></i>
+      <span class="vo-chip" style="left:5.4cqw;top:5.2cqw">Claude Card</span>
+      <div class="vo-tag">${esc(s.rarity)}</div>
+      <div class="vo-name"><span data-fit="27">${esc(s.name)}</span></div>
+      <div class="vo-data">
+        <div class="vo-role">${esc(s.title)} / ${esc(s.shift)}</div>
+        <dl class="vo-table">${ROWS(s).map(line).join('')}</dl>
+        <div class="vo-bottom">${barcode(s.serial)}<div class="vo-warn">Caution: ${abbr(s.tokens)} tokens inside<br>No. ${s.serial} / Since ${esc(s.since)}</div></div>
+      </div>
+    </div>`,
+    back: s => `<div class="vo vo-b">
+      <i class="vo-band" style="top:0"></i><i class="vo-band" style="bottom:0"></i>
+      <div class="vo-art">${sparkMask('vo-ink')}${filmMask('vo-film')}</div>
+      <div class="vo-word"><span data-fit="19">Claude Card</span></div>
+      <div class="vo-bottom">${barcode(s.serial)}<div class="vo-warn">Unofficial fan project<br>Not affiliated with Anthropic</div></div>
+    </div>`,
+  },
+};
+
+const $ = q => document.querySelector(q);
+const stage = $('.stage'), card = $('.card'), dock = $('.dock'), ghost = $('.ghost');
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+stage.setAttribute('aria-label', `Claude Card for ${S.name}: ${ROWS(S).map(([l, v]) => `${l} ${v}`).join(', ')}`);
+
+for (let i = -3; i <= 3; i++) card.insertAdjacentHTML('beforeend', `<i class="edge" style="--i:${i}"></i>`);
+card.insertAdjacentHTML('beforeend', '<div class="face front"></div><div class="face back"></div><div class="pop f"></div><div class="pop b"></div>');
+const front = $('.front'), back = $('.back'), popFront = $('.pop.f'), popBack = $('.pop.b');
+
+function fitText() {
+  document.querySelectorAll('[data-fit]').forEach(el => {
+    const base = +el.dataset.fit;
+    el.style.fontSize = `${base}cqw`;
+    const room = el.parentElement.clientWidth;
+    if (room > 0 && el.offsetWidth > room) el.style.fontSize = `${(base * room / el.offsetWidth * .98).toFixed(3)}cqw`;
+  });
+}
+function fitGhost() { // sized in viewport units, so it follows the window and comes out right in a download
+  const name = ghost.firstElementChild;
+  name.style.fontSize = '100px';
+  name.style.fontSize = `min(${(9600 / name.offsetWidth).toFixed(2)}vw, 46vh)`;
+}
+
+const ids = Object.keys(DESIGNS);
+const STORE_KEY = 'claude-card-design';
+const remembered = () => { try { return localStorage.getItem(STORE_KEY); } catch { return null; } };
+let current = [location.hash.slice(1), remembered()].find(id => ids.includes(id)) || ids[0];
+function show(id, spin) {
+  const d = DESIGNS[id];
+  current = id;
+  document.body.dataset.design = id;
+  front.innerHTML = d.front(S) + '<i class="glare"></i>';
+  back.innerHTML = d.back(S) + '<i class="glare"></i>';
+  popFront.innerHTML = d.frontPop ? d.frontPop(S) : '';
+  popBack.innerHTML = d.backPop ? d.backPop(S) : '';
+  ghost.innerHTML = `<span>${d.label}</span>`;
+  const fit = () => { fitText(); fitGhost(); };
+  fit(); // measuring is what starts this design's fonts loading, so measure again once they're in
+  document.fonts.ready.then(fit);
+  history.replaceState(null, '', `#${id}`);
+  try { localStorage.setItem(STORE_KEY, id); } catch { /* private window: the choice just isn't remembered */ }
+  dock.querySelectorAll('[data-id]').forEach(b => b.setAttribute('aria-pressed', b.dataset.id === id));
+  if (spin && !reduce) target += 360;
+}
+
+const ICON = {
+  flip: '<path d="M21 12a9 9 0 1 1-2.6-6.4L21 8M21 3v5h-5"/>',
+  save: '<path d="M12 4v11M7 11l5 5 5-5M4 20h16"/>',
+  busy: '<path d="M12 3a9 9 0 1 0 9 9"/>',
+  done: '<path d="M5 13l4 4L19 7"/>',
+};
+const iconButton = (id, icon, label) => `<button type="button" id="${id}" aria-label="${label}"><svg viewBox="0 0 24 24" aria-hidden="true">${ICON[icon]}</svg><span>${label}</span></button>`;
+dock.innerHTML = ids.map((id, i) => `<button type="button" data-id="${id}" aria-label="${DESIGNS[id].label} design" title="${DESIGNS[id].label} (${i + 1})"><i class="mini"></i><span>${DESIGNS[id].label}</span></button>`).join('')
+  + `<i class="sep"></i>${iconButton('flip', 'flip', 'Flip')}${iconButton('save', 'save', 'Download')}`;
+dock.addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  if (b.id === 'flip') target += 180;
+  else if (b.id === 'save') download();
+  else if (b.dataset.id !== current) show(b.dataset.id, true);
+});
+
+// Download: the browser draws the page into an SVG image, so the foil, masks and blends come out as they look on screen.
+const SHOT = { w: 1440, h: 1800, card: 1000 };
+async function embeddedFonts() { // an SVG image can't load anything from outside, so the fonts on screen go inside it
+  try {
+    const css = await (await fetch($('link[rel=stylesheet]').href)).text();
+    const key = (family, weight, range) => `${family}|${weight}|${parseInt(range, 16)}`;
+    const inUse = new Set([...document.fonts].filter(f => f.status === 'loaded').map(f => key(f.family.replace(/["']/g, ''), f.weight, f.unicodeRange.slice(2))));
+    const faces = css.match(/@font-face\s*{[^}]*}/g).filter(face => inUse.has(key(/font-family:\s*'([^']+)/.exec(face)[1], /font-weight:\s*(\d+)/.exec(face)[1], /unicode-range:\s*U\+([0-9A-F]+)/i.exec(face)[1])));
+    return (await Promise.all(faces.map(async face => {
+      const url = /url\((https:[^)]+)\)/.exec(face)[1];
+      const file = await (await fetch(url)).blob();
+      const data = await new Promise(done => { const r = new FileReader(); r.onload = () => done(r.result); r.readAsDataURL(file); });
+      return face.replace(url, data);
+    }))).join('');
+  } catch { return ''; } // ponytail: offline, the image uses system fonts rather than failing
+}
+async function renderPng() {
+  const { w, h, card: width } = SHOT;
+  const shot = document.createElement('div');
+  shot.dataset.design = current;
+  shot.style.cssText = `${rootStyle.cssText};${document.body.style.cssText};position:relative;display:flex;align-items:center;justify-content:center;width:${w}px;height:${h}px;overflow:hidden;background:var(--base)`;
+  const style = document.createElement('style');
+  style.textContent = `${await embeddedFonts()}${$('style').textContent}.ghost span{animation:none}`; // an SVG image stays on its first frame
+  const copy = stage.cloneNode(true);
+  copy.style.setProperty('--w', `${width}px`);
+  // SVG images ignore backface-visibility, so the side facing away has to go.
+  const away = Math.cos(ry * Math.PI / 180) * Math.cos(rx * Math.PI / 180) >= 0 ? ['.back', '.pop.b'] : ['.front', '.pop.f'];
+  away.forEach(side => copy.querySelector(side).remove());
+  shot.append(style, $('.aura').cloneNode(true), ghost.cloneNode(true), copy);
+  const image = new Image();
+  image.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><foreignObject width="100%" height="100%">${new XMLSerializer().serializeToString(shot)}</foreignObject></svg>`)}`;
+  await image.decode();
+  const canvas = Object.assign(document.createElement('canvas'), { width: w, height: h });
+  canvas.getContext('2d').drawImage(image, 0, 0);
+  return new Promise((done, fail) => canvas.toBlob(blob => blob ? done(blob) : fail(new Error('no image')), 'image/png'));
+}
+function setSave(icon, label) {
+  const save = $('#save');
+  save.classList.toggle('busy', icon === 'busy');
+  save.querySelector('svg').innerHTML = ICON[icon];
+  save.querySelector('span').textContent = label;
+}
+async function download() {
+  if ($('#save.busy')) return;
+  setSave('busy', 'Saving');
+  $('.toast').textContent = '';
+  try {
+    const url = URL.createObjectURL(await renderPng());
+    const who = S.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    Object.assign(document.createElement('a'), { href: url, download: `claude-card-${who ? `${who}-` : ''}${current}.png` }).click();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    setSave('done', 'Saved');
+    setTimeout(() => setSave('save', 'Download'), 1800);
+  } catch {
+    setSave('save', 'Download');
+    $('.toast').textContent = "This browser can't save the card as an image. Take a screenshot instead.";
+  }
+}
+
+// Physics: the card springs toward a resting face. A drag sets it free and a flick picks the next face.
+let rx = 0, ry = 0, vx = 0, vy = 0, target = 0, hoverX = 0, hoverY = 0, drag = null;
+let intro = reduce ? -1e9 : performance.now(), lastTime = performance.now(), lastInput = performance.now();
+
+stage.addEventListener('pointerdown', e => {
+  intro = -1e9; vx = vy = 0;
+  stage.setPointerCapture(e.pointerId);
+  drag = { x: e.clientX, y: e.clientY };
+});
+stage.addEventListener('pointermove', e => {
+  if (!drag) return;
+  const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+  drag = { x: e.clientX, y: e.clientY };
+  ry += dx * .6;
+  rx = clamp(rx - dy * .45, -70, 70);
+  vy = vy * .5 + dx * .3;
+});
+const release = () => {
+  if (!drag) return;
+  drag = null;
+  target = Math.round((ry + clamp(vy, -30, 30) * 12) / 180) * 180;
+};
+stage.addEventListener('pointerup', release);
+stage.addEventListener('pointercancel', release);
+addEventListener('pointermove', e => {
+  lastInput = performance.now();
+  if (e.pointerType !== 'mouse' || drag) return;
+  const b = stage.getBoundingClientRect();
+  hoverY = clamp((e.clientX - b.left - b.width / 2) / b.width, -1, 1) * 11;
+  hoverX = -clamp((e.clientY - b.top - b.height / 2) / b.height, -1, 1) * 9;
+});
+addEventListener('pointerdown', () => { lastInput = performance.now(); });
+document.documentElement.addEventListener('pointerleave', () => { hoverX = hoverY = 0; });
+addEventListener('keydown', e => {
+  lastInput = performance.now();
+  if (e.key === 'f' || e.key === 'F') target += 180;
+  const n = +e.key;
+  if (n >= 1 && n <= ids.length && ids[n - 1] !== current) show(ids[n - 1], true);
+});
+
+const put = (k, v) => document.body.style.setProperty(k, v);
+function pose() {
+  const sy = Math.sin(ry * Math.PI / 180), cy = Math.cos(ry * Math.PI / 180), sx = Math.sin(rx * Math.PI / 180);
+  const px = clamp((cy >= 0 ? sy : -sy) * 2.2, -1, 1), py = clamp(sx * 2.6, -1, 1);
+  put('--rx', `${rx.toFixed(2)}deg`);
+  put('--ry', `${ry.toFixed(2)}deg`);
+  put('--px', px.toFixed(3));
+  put('--py', py.toFixed(3));
+  put('--mx', `${(50 + px * 50).toFixed(1)}%`);
+  put('--my', `${(50 + py * 50).toFixed(1)}%`);
+  put('--tilt', Math.min(1, Math.hypot(px, py)).toFixed(3));
+  put('--hue', (ry + rx * 1.5).toFixed(1));
+  put('--cos', Math.abs(cy).toFixed(3));
+}
+function tick(now) {
+  const f = Math.min(3, (now - lastTime) / 16.67);
+  lastTime = now;
+  const t = (now - intro) / 1500;
+  if (t < 1) {
+    const e = 1 - (1 - t) ** 4;
+    ry = -720 * (1 - e);
+    rx = 16 * (1 - e);
+  } else if (drag) {
+    vy *= .85;
+  } else {
+    const idle = !reduce && now - lastInput > 2600;
+    vy += (target + (idle ? Math.sin(now / 2300) * 7 : hoverY * (reduce ? 0 : 1)) - ry) * .018 * f;
+    vy = clamp(vy * .81 ** f, -24, 24);
+    ry += vy * f;
+    vx += ((idle ? Math.cos(now / 2900) * 3.5 : hoverX * (reduce ? 0 : 1)) - rx) * .03 * f;
+    vx *= .78 ** f;
+    rx += vx * f;
+  }
+  pose();
+  document.body.classList.toggle('quiet', now - lastInput > 3000);
+  requestAnimationFrame(tick);
+}
+
+show(current);
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>

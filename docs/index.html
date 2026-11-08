@@ -1,0 +1,426 @@
+<!doctype html>
+<html lang="en" data-design="prism">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Claude Card: your Claude stats as a holographic trading card</title>
+<meta name="description" content="Type /card in Claude Code and your stats become a holographic 3D trading card you can spin, flip, download and post. Five designs. Free and open source.">
+<meta name="theme-color" content="#07070f">
+<link rel="canonical" href="https://codyspooner.github.io/claude-card/">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x2='1' y2='1'%3E%3Cstop stop-color='%23ff7ae0'/%3E%3Cstop offset='.5' stop-color='%235ce1ff'/%3E%3Cstop offset='1' stop-color='%23fff27a'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='6' y='2' width='20' height='28' rx='4' fill='url(%23g)'/%3E%3Cpath d='M16 9v14M10 12l12 8M22 12l-12 8' stroke='%2307070f' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="preload" href="fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
+<meta property="og:type" content="website">
+<meta property="og:title" content="Claude Card: your Claude stats as a holographic trading card">
+<meta property="og:description" content="Type /card in Claude Code and get a 3D trading card you can spin, flip, download and post. Free and open source.">
+<meta property="og:url" content="https://codyspooner.github.io/claude-card/">
+<meta property="og:image" content="https://codyspooner.github.io/claude-card/images/social-preview.png">
+<meta name="twitter:card" content="summary_large_image">
+<style>
+@font-face{font-family:Inter;src:url(fonts/inter.woff2) format("woff2");font-weight:100 900;font-display:swap}
+@font-face{font-family:"JetBrains Mono";src:url(fonts/jetbrains-mono.woff2) format("woff2");font-weight:100 800;font-display:swap}
+@property --bg{syntax:'<color>';inherits:true;initial-value:#07070f}
+@property --a1{syntax:'<color>';inherits:true;initial-value:#333}
+@property --a2{syntax:'<color>';inherits:true;initial-value:#333}
+@property --accent{syntax:'<color>';inherits:true;initial-value:#fff}
+
+/* Each design's colors, the same ones the card page uses. */
+[data-design=phosphor]{--bg:#0b0602;--a1:#8a4f10;--a2:#4a2606;--accent:#ffb347}
+[data-design=prism]{--bg:#07070f;--a1:#5a2fd0;--a2:#0a7d96;--accent:#b79bff}
+[data-design=obsidian]{--bg:#050507;--a1:#4b3a8f;--a2:#8a2a66;--accent:#ff7ad0}
+[data-design=horizon]{--bg:#07030f;--a1:#8a1f7a;--a2:#3a1d8f;--accent:#ff5fc4}
+[data-design=volt]{--bg:#060704;--a1:#5c6b00;--a2:#2f3a00;--accent:#d9ff2a}
+
+:root{color-scheme:dark;--text:#f5f5f8;--muted:#b9b9c6;--line:rgba(255,255,255,.12);--glass:rgba(255,255,255,.05);--mono:"JetBrains Mono",ui-monospace,Consolas,monospace;--edge:clamp(16px,4vw,48px);--top:64px;--holo:linear-gradient(100deg,#ff7ae0,#b39bff,#5ce1ff,#6fffc0,#fff27a,#ff7ae0);--spring:cubic-bezier(.2,.8,.2,1)}
+*{box-sizing:border-box;margin:0}
+html{background:var(--bg);color:var(--text);font:400 17px/1.6 Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased;scroll-behavior:smooth;scroll-padding-top:calc(var(--top) + 16px);transition:--bg .7s,--a1 .7s,--a2 .7s,--accent .4s}
+body{overflow-x:clip}
+img{display:block;max-width:100%;height:auto}
+a{color:inherit}
+:focus-visible{outline:3px solid var(--accent);outline-offset:3px;border-radius:4px}
+.skip{position:fixed;left:16px;top:-80px;z-index:30;padding:10px 16px;background:var(--accent);color:#0b0b10;border-radius:8px}
+.skip:focus{top:12px}
+.wrap{position:relative;max-width:1240px;margin-inline:auto;padding-inline:var(--edge)}
+code{font-family:var(--mono);font-size:.92em;color:var(--accent)}
+h1,h2,h3{line-height:1.08;letter-spacing:-.035em;font-weight:800;text-wrap:balance}
+h2{font-size:clamp(32px,5vw,58px)}
+.lead{margin-top:16px;color:var(--muted);max-width:60ch}
+section{padding-block:clamp(56px,8vw,112px)}
+.eyebrow{font:600 12.5px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+section .eyebrow{margin-bottom:14px}
+
+/* The room: the same drifting glows and dot grid as the card page. */
+.aura{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none}
+.aura i{position:absolute;left:50%;top:34%;width:130vmax;aspect-ratio:1;margin:-65vmax;border-radius:50%;background:radial-gradient(closest-side,var(--a1),transparent);opacity:.55;animation:drift 19s ease-in-out infinite alternate}
+.aura i+i{top:70%;background:radial-gradient(closest-side,var(--a2),transparent);animation-duration:27s;animation-direction:alternate-reverse}
+@keyframes drift{from{transform:translate(-30vmax,-8vmax)}to{transform:translate(30vmax,8vmax) scale(1.15)}}
+.aura::after{content:"";position:absolute;inset:0;background:radial-gradient(rgba(255,255,255,.07) 1px,transparent 1.5px) 0 0/28px 28px;mask:linear-gradient(#000,transparent 80%)}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 22px;border-radius:12px;border:1px solid var(--line);font:600 16px/1 Inter,sans-serif;text-decoration:none;color:var(--text);background:var(--glass);cursor:pointer;touch-action:manipulation;transition:background .2s,border-color .2s,transform .15s,filter .2s}
+.btn:hover{border-color:var(--accent);background:rgba(255,255,255,.09)}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#0b0b10}
+.btn.primary:hover{background:var(--accent);filter:brightness(1.12)}
+
+/* Bar */
+.bar{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 72%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.bar .wrap{display:flex;align-items:center;gap:6px;height:var(--top)}
+.brand{display:flex;align-items:center;gap:10px;min-height:44px;margin-right:auto;font-weight:800;letter-spacing:-.02em;text-decoration:none}
+.brand i{width:16px;height:22px;border-radius:3px;background:var(--holo) 0 0/300% 100%;animation:holo 7s linear infinite}
+@keyframes holo{to{background-position:-300% 0}}
+.bar nav a{display:inline-flex;align-items:center;min-height:44px;padding:0 12px;font-weight:500;font-size:15px;color:var(--muted);text-decoration:none;transition:color .2s}
+.bar nav a:hover{color:var(--text)}
+
+/* Hero */
+.hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,560px);gap:clamp(20px,4vw,56px);align-items:center;padding-block:clamp(24px,4vw,48px) 24px}
+h1{margin-top:16px;font-size:clamp(40px,5.2vw,68px)}
+h1 em{font-style:normal;background:var(--holo) 0 0/300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:holo 12s linear infinite}
+.hero .lead{margin-top:20px;font-size:clamp(18px,1.6vw,20px)}
+.actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:20px}
+.checks{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:22px;padding:0;list-style:none;font-size:15px;color:var(--muted)}
+.checks li{display:flex;align-items:center;gap:8px}
+.checks li::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px var(--accent)}
+.cmd{display:flex;align-items:stretch;margin-top:26px;border:1px solid var(--line);border-radius:12px;background:rgba(0,0,0,.35);overflow:hidden}
+.cmd code{flex:1;min-width:0;padding:13px 16px;font-size:14px;line-height:1.5;color:var(--text);overflow-wrap:anywhere}
+.copy{flex:none;min-width:72px;min-height:48px;border:0;border-left:1px solid var(--line);background:transparent;color:var(--accent);font:600 13px var(--mono);cursor:pointer;touch-action:manipulation;transition:background .2s}
+.copy:hover{background:rgba(255,255,255,.08)}
+.live{position:relative;height:min(860px,calc(100dvh - var(--top) - 24px));min-height:540px}
+.live iframe{width:100%;height:100%;border:0;background:transparent;opacity:0;transition:opacity .5s}
+.live iframe.on{opacity:1}
+
+/* Ticker */
+.ticker{overflow:hidden;border-block:1px solid var(--line);background:rgba(0,0,0,.25);mask:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent)}
+.ticker div{display:flex;width:max-content;animation:slide 46s linear infinite}
+.ticker span{padding:14px 18px;font:600 14px var(--mono);letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;color:var(--muted)}
+.ticker b{color:var(--text);font-weight:700}
+.ticker span::after{content:"✦";margin-left:36px;color:var(--accent)}
+@keyframes slide{to{transform:translateX(-50%)}}
+
+/* Reveal on scroll */
+.reveal{opacity:0;translate:0 26px;transition:opacity .7s var(--spring),translate .7s var(--spring)}
+.reveal.in{opacity:1;translate:0 0}
+
+/* The fan */
+.fan{position:relative;height:clamp(420px,42vw,520px);margin-top:clamp(28px,4vw,48px)}
+.fcard{--tx:0deg;--ty:0deg;--mx:50%;--my:50%;--lift:0px;position:absolute;left:50%;top:0;width:clamp(230px,23vw,300px);margin-left:calc(clamp(230px,23vw,300px)/-2);padding:0;border:0;background:none;cursor:pointer;perspective:900px;touch-action:manipulation;z-index:calc(5 - var(--d));transform:translate(calc(var(--i)*var(--gap,clamp(150px,16vw,205px))),calc(var(--d)*11px + var(--lift))) rotate(calc(var(--i)*5.5deg));transition:transform .75s var(--spring);transition-delay:calc((var(--i) + 2)*50ms)}
+.fan:not(.in) .fcard{transform:translateY(40px) rotate(calc(var(--i)*1.5deg))}
+.fan.in .fcard{transition-delay:0s}
+.fcard:hover,.fcard:focus-visible{--lift:-26px;z-index:7}
+.fcard[aria-pressed=true]{--lift:-16px;z-index:6}
+.fcard[aria-pressed=true]:hover{--lift:-26px}
+.fcard .tilt{position:relative;display:block;transform:rotateX(var(--tx)) rotateY(var(--ty)) ;transition:transform .2s ease-out;filter:drop-shadow(0 22px 28px rgba(0,0,0,.55))}
+.fcard[aria-pressed=true] .tilt{filter:drop-shadow(0 22px 28px rgba(0,0,0,.55)) drop-shadow(0 0 22px color-mix(in srgb,var(--accent) 65%,transparent))}
+.fcard .sheen{position:absolute;inset:4.4% 4.8%;border-radius:4.2%;background:radial-gradient(circle at var(--mx) var(--my),rgba(255,255,255,.6),transparent 42%),linear-gradient(115deg,#ff7ad966,#7ad0ff66,#7affc466,#ffe27a66);background-size:100% 100%,240% 240%;background-position:0 0,var(--mx) var(--my);mix-blend-mode:overlay;opacity:0;transition:opacity .25s}
+.fcard:hover .sheen{opacity:1}
+.fcard .tag{position:absolute;left:50%;bottom:-6px;transform:translate(-50%,8px);padding:4px 12px;border-radius:999px;background:#0b0b10;font:600 13px Inter,sans-serif;color:var(--text);opacity:0;white-space:nowrap;transition:opacity .2s,transform .2s}
+.fcard:hover .tag,.fcard:focus-visible .tag,.fcard[aria-pressed=true] .tag{opacity:1;transform:translate(-50%,0)}
+
+/* The chosen design */
+.detail{display:grid;grid-template-columns:minmax(0,440px) minmax(0,1fr);gap:clamp(24px,5vw,72px);align-items:center;margin-top:clamp(24px,4vw,48px);padding:clamp(16px,3vw,32px);border:1px solid var(--line);border-radius:22px;background:var(--glass)}
+.detail img{width:100%;aspect-ratio:440/540;border-radius:14px;background:rgba(0,0,0,.3)}
+.detail h3{font-size:clamp(34px,4.4vw,56px);color:var(--accent)}
+.detail .look{margin-top:14px;font-size:clamp(18px,1.6vw,20px)}
+.detail dl{display:grid;grid-template-columns:auto 1fr;gap:6px 18px;margin-top:20px;color:var(--muted);font-size:16px}
+.detail dt{font:600 12px var(--mono);letter-spacing:.1em;text-transform:uppercase;padding-top:4px;color:var(--text)}
+.detail dd{margin:0}
+.detail .btn{margin-top:26px}
+
+/* Posted */
+.posted{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(28px,5vw,72px);align-items:center}
+.posted>img{width:100%;border-radius:18px;border:1px solid var(--line);box-shadow:0 24px 80px rgba(0,0,0,.5)}
+.controls{display:grid;gap:10px;margin-top:26px;padding:0;list-style:none}
+.controls li{display:grid;grid-template-columns:96px 1fr;gap:14px;align-items:baseline;padding:13px 16px;border:1px solid var(--line);border-radius:12px;background:var(--glass)}
+.controls b{font-weight:700}
+.controls span{color:var(--muted);font-size:16px}
+kbd{padding:1px 7px;border:1px solid var(--line);border-bottom-width:2px;border-radius:6px;font:600 13px var(--mono);color:var(--text);background:rgba(255,255,255,.06)}
+
+/* Stats */
+.tiles{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-top:clamp(24px,4vw,40px)}
+.tile{position:relative;padding:18px;border:1px solid var(--line);border-radius:14px;background:var(--glass);transition:transform .25s var(--spring),border-color .25s}
+.tile:hover{transform:translateY(-4px);border-color:var(--accent)}
+.tile b{display:block;font:700 26px/1.1 Inter,sans-serif;letter-spacing:-.03em;background:var(--holo) 0 0/300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent}
+.tile strong{display:block;margin-top:10px;font-size:15px;font-weight:700}
+.tile span{display:block;margin-top:3px;font-size:14.5px;line-height:1.4;color:var(--muted)}
+.ladder{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-top:32px}
+.rung{position:relative;overflow:hidden;padding:18px;border-radius:14px;border:1px solid var(--line);background:rgba(0,0,0,.3)}
+.rung::before{content:"";position:absolute;inset:0;background:var(--holo) 0 0/300% 100%;opacity:var(--o);animation:holo 9s linear infinite}
+.rung>*{position:relative}
+.rung b{display:block;font-size:19px;font-weight:800;letter-spacing:-.02em}
+.rung span{font:500 13.5px var(--mono);color:#e4e4ec}
+.rung.bright{color:#0b0b10}
+.rung.bright span{color:#17172a}
+.persona{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}
+.persona p{padding:16px 18px;border:1px solid var(--line);border-radius:14px;background:var(--glass);color:var(--muted);font-size:16px}
+.persona b{color:var(--text)}
+
+/* Install */
+.steps{counter-reset:step;display:grid;gap:12px;margin-top:clamp(24px,4vw,40px);padding:0;list-style:none}
+.steps li{counter-increment:step;display:grid;grid-template-columns:48px minmax(0,1fr);gap:18px;padding:20px;border:1px solid var(--line);border-radius:16px;background:var(--glass)}
+.steps li::before{content:counter(step);display:grid;place-items:center;width:48px;height:48px;border-radius:12px;background:var(--accent);color:#0b0b10;font:800 20px Inter,sans-serif}
+.steps h3{font-size:20px;letter-spacing:-.02em;line-height:1.3}
+.steps p{margin-top:4px;color:var(--muted);font-size:16px}
+.steps .cmd{margin-top:12px}
+details{margin-top:12px;border:1px solid var(--line);border-radius:14px;background:var(--glass)}
+summary{min-height:48px;padding:12px 20px;font-weight:600;cursor:pointer}
+details>div{padding:0 20px 20px;color:var(--muted);font-size:16px}
+details .cmd{margin:8px 0 14px}
+
+/* Privacy */
+.trio{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:clamp(24px,4vw,40px)}
+.trio div{padding:22px;border:1px solid var(--line);border-radius:16px;background:var(--glass)}
+.trio h3{font-size:20px;letter-spacing:-.02em;line-height:1.25}
+.trio p{margin-top:8px;color:var(--muted);font-size:16px}
+
+footer{padding-block:40px 56px;border-top:1px solid var(--line);text-align:center;color:var(--muted);font-size:15px}
+footer small{display:block;margin-top:6px;font-size:14px}
+
+@media (max-width:980px){
+  .hero,.posted,.detail{grid-template-columns:minmax(0,1fr)}
+  .detail img{max-width:440px;margin-inline:auto}
+  .tiles,.ladder{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .trio{grid-template-columns:minmax(0,1fr)}
+  .persona{grid-template-columns:minmax(0,1fr)}
+  .live{height:min(640px,72dvh);min-height:480px}
+  .fan{display:flex;gap:6px;height:auto;margin-inline:calc(var(--edge)*-1);padding:34px var(--edge) 22px;overflow-x:auto;scroll-snap-type:x proximity;scrollbar-width:none}
+  .fcard{position:relative;left:auto;flex:0 0 clamp(190px,56vw,260px);width:auto;margin:0;transform:translateY(var(--lift));scroll-snap-align:center}
+  .fan:not(.in) .fcard{transform:none}
+}
+@media (max-width:600px){.steps li{grid-template-columns:minmax(0,1fr);gap:12px}.cmd code{font-size:13px}}
+@media (max-width:420px){.bar nav a:first-child{display:none}.tile{padding:14px}.tile b{font-size:22px}}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .aura i,.brand i,h1 em,.ticker div,.rung::before{animation:none}
+  .reveal{opacity:1;translate:0 0;transition:none}
+  .fcard{transition:none}
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to the content</a>
+<div class="aura" aria-hidden="true"><i></i><i></i></div>
+
+<header class="bar"><div class="wrap">
+  <a class="brand" href="#main"><i></i>Claude Card</a>
+  <nav aria-label="Main">
+    <a href="#designs">Designs</a>
+    <a href="#install">Install</a>
+    <a href="https://github.com/CodySpooner/claude-card">GitHub</a>
+  </nav>
+</div></header>
+
+<main id="main">
+  <section class="wrap hero">
+    <div>
+      <p class="eyebrow">Free and open source for Claude Code</p>
+      <h1>Your Claude stats on a <em>holographic card</em></h1>
+      <p class="lead">Type <code>/card</code> and your tokens, streak, top model and more become a 3D trading card you can spin, flip, download and post.</p>
+      <div class="cmd">
+        <code id="clone">git clone --depth 1 https://github.com/CodySpooner/claude-card "$HOME/.claude/skills/card"</code>
+        <button class="copy" type="button" data-copy="clone">Copy</button>
+      </div>
+      <div class="actions">
+        <a class="btn primary" href="#install">How to install</a>
+        <a class="btn" href="https://github.com/CodySpooner/claude-card">View on GitHub</a>
+      </div>
+      <ul class="checks">
+        <li>Runs on your machine</li>
+        <li>Stats never uploaded</li>
+        <li>No dependencies</li>
+        <li>MIT license</li>
+      </ul>
+    </div>
+    <div class="live">
+      <iframe id="live" src="demo.html#prism" title="A live sample card. Drag it to spin it, and use the buttons under it to change the design, flip it or download it." scrolling="no"></iframe>
+    </div>
+  </section>
+
+  <div class="ticker" aria-hidden="true"><div id="ticker"></div></div>
+
+  <section class="wrap" id="designs">
+    <div class="reveal">
+      <p class="eyebrow">Five designs</p>
+      <h2>One command, five looks</h2>
+      <p class="lead">Switch any time with the dock under the card or the keys <kbd>1</kbd> to <kbd>5</kbd>. Your browser remembers your pick. Tap a card here to see it spin.</p>
+    </div>
+    <div class="fan" id="fan" role="group" aria-label="Choose a design"></div>
+    <div class="detail reveal">
+      <img id="spin" src="images/prism.webp" width="440" height="540" alt="" loading="lazy">
+      <div aria-live="polite">
+        <h3 id="dname"></h3>
+        <p class="look" id="dlook"></p>
+        <dl>
+          <dt>Back</dt><dd id="dback"></dd>
+          <dt>Motion</dt><dd id="dmotion"></dd>
+        </dl>
+        <a class="btn" href="#main" id="try">Spin it live</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="wrap posted" id="download">
+    <img class="reveal" src="images/sample.jpg" width="960" height="1200" alt="A downloaded Claude Card picture: the Prism design, tilted in 3D, with its foil, chrome spark and stats on a dark glowing background." loading="lazy">
+    <div class="reveal">
+      <p class="eyebrow">Made to be posted</p>
+      <h2>Angle it. Download it. Post it.</h2>
+      <p class="lead">Download saves a sharp 1440 × 1800 PNG of the card at the angle you left it, foil and all. This picture came straight from the button.</p>
+      <ul class="controls">
+        <li><b>Spin</b><span>Click and drag. A hard flick turns it to the other side.</span></li>
+        <li><b>Flip</b><span>The Flip button or <kbd>F</kbd></span></li>
+        <li><b>Design</b><span>The dock or keys <kbd>1</kbd> to <kbd>5</kbd></span></li>
+        <li><b>Download</b><span>The Download button. The dock fades away on its own for clean screenshots too.</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="wrap" id="stats">
+    <div class="reveal">
+      <p class="eyebrow">What's on the card</p>
+      <h2>Ten stats, from your own history</h2>
+      <p class="lead">Counted from the Claude Code transcripts on your machine. The numbers here are a sample.</p>
+    </div>
+    <div class="tiles reveal">
+      <div class="tile"><b>4.8B</b><strong>Tokens</strong><span>Everything sent and received, cache included</span></div>
+      <div class="tile"><b>38.4M</b><strong>Output</strong><span>The tokens Claude wrote back</span></div>
+      <div class="tile"><b>212</b><strong>Sessions</strong><span>Separate Claude Code sessions</span></div>
+      <div class="tile"><b>6,430</b><strong>Prompts</strong><span>Messages you typed yourself</span></div>
+      <div class="tile"><b>41.2K</b><strong>Tool calls</strong><span>Every command, edit, read and search</span></div>
+      <div class="tile"><b>96</b><strong>Active days</strong><span>Days you used Claude Code</span></div>
+      <div class="tile"><b>17d</b><strong>Best streak</strong><span>Your most days in a row</span></div>
+      <div class="tile"><b>Opus 5.5</b><strong>Top model</strong><span>The model that wrote the most</span></div>
+      <div class="tile"><b>Edit</b><strong>Top tool</strong><span>The built-in tool Claude used most</span></div>
+      <div class="tile"><b>10 PM</b><strong>Peak hour</strong><span>The hour you type the most</span></div>
+    </div>
+    <div class="ladder reveal">
+      <div class="rung" style="--o:0"><b>Common</b><span>under 200K</span></div>
+      <div class="rung" style="--o:.14"><b>Uncommon</b><span>200K output</span></div>
+      <div class="rung" style="--o:.3"><b>Rare</b><span>2M output</span></div>
+      <div class="rung" style="--o:.42"><b>Epic</b><span>20M output</span></div>
+      <div class="rung bright" style="--o:1"><b>Legendary</b><span>100M output</span></div>
+    </div>
+    <div class="persona reveal">
+      <p><b>Your title comes from your top tool:</b> The Operator, The Author, The Scholar, The Explorer, The Commander or The Builder.</p>
+      <p><b>Your shift comes from your peak hour:</b> Early Bird, Day Shift, Golden Hour or Night Owl.</p>
+    </div>
+  </section>
+
+  <section class="wrap" id="install">
+    <div class="reveal">
+      <p class="eyebrow">Install</p>
+      <h2>Ready in under a minute</h2>
+      <p class="lead">You need Claude Code, Git and Node.js 18 or newer. It adds one <code>/card</code> command and nothing else.</p>
+    </div>
+    <ol class="steps reveal">
+      <li><div>
+        <h3>Clone it into your skills folder</h3>
+        <p>Run this in PowerShell, bash or zsh.</p>
+        <div class="cmd"><code id="clone2">git clone --depth 1 https://github.com/CodySpooner/claude-card "$HOME/.claude/skills/card"</code><button class="copy" type="button" data-copy="clone2">Copy</button></div>
+      </div></li>
+      <li><div>
+        <h3>Start a new Claude Code session</h3>
+        <p>Claude Code picks up new skills when a session starts. This works in the terminal and in the desktop app's Code tab.</p>
+      </div></li>
+      <li><div>
+        <h3>Type <code>/card</code></h3>
+        <p>Your card opens in your browser. On a long history it can take about a minute. To print a handle instead of your account name, run <code>/card Ada Lovelace</code>.</p>
+      </div></li>
+    </ol>
+    <details class="reveal">
+      <summary>Update or uninstall</summary>
+      <div>
+        <p>To update:</p>
+        <div class="cmd"><code id="update">git -C "$HOME/.claude/skills/card" pull</code><button class="copy" type="button" data-copy="update">Copy</button></div>
+        <p>To uninstall, delete the <code>~/.claude/skills/card</code> folder. Your saved card is in <code>~/.claude/claude-card</code>, so delete that folder too if you don't want it.</p>
+      </div>
+    </details>
+  </section>
+
+  <section class="wrap" id="privacy">
+    <div class="reveal">
+      <p class="eyebrow">Privacy</p>
+      <h2>Your stats stay yours</h2>
+    </div>
+    <div class="trio reveal">
+      <div><h3>Everything runs locally</h3><p>A small script counts your local transcripts and writes one HTML file on your machine. Nothing is uploaded, and nothing leaves unless you post it.</p></div>
+      <div><h3>Only numbers and a name</h3><p>The card holds your display name and the numbers you see. Never your email, your prompts or anything you wrote.</p></div>
+      <div><h3>One outside request</h3><p>The card page loads its fonts from Google Fonts, so Google sees that request, but not your stats.</p></div>
+    </div>
+  </section>
+</main>
+
+<footer><div class="wrap">
+  Made by <a href="https://github.com/CodySpooner">Xody</a> · <a href="https://github.com/CodySpooner/claude-card/blob/main/LICENSE">MIT license</a> · <a href="https://github.com/CodySpooner/claude-card">Source on GitHub</a>
+  <small>An unofficial community project, not made by or affiliated with Anthropic. "Claude" is a trademark of Anthropic.</small>
+</div></footer>
+
+<script>
+const $ = q => document.querySelector(q);
+const DESIGNS = {
+  phosphor: { label: 'Phosphor', look: 'An amber CRT terminal, with your spark drawn in ASCII and 26 weeks of activity as a heat map.', back: 'The word CLAUDE fills a giant ASCII spark.', motion: 'Rolling scanlines, a color-split as you tilt it and a blinking cursor.', alt: 'The Phosphor card flipping in 3D: amber terminal text on a dark CRT screen.' },
+  prism: { label: 'Prism', look: 'Full holographic foil that shifts as you tilt it, with a chrome spark floating above the card in real 3D.', back: 'A foil disc ringed with lettering, under the same floating spark.', motion: 'The foil and the chrome both follow the light, and stars twinkle across it.', alt: 'The Prism card flipping in 3D: rainbow foil with a floating chrome spark.' },
+  obsidian: { label: 'Obsidian', look: 'A stealth black card with an oil-slick spark that stays hidden until the light catches it.', back: 'A magnetic stripe above the spark.', motion: 'A pool of color slides across the spark as you tilt it.', alt: 'The Obsidian card flipping in 3D: black carbon weave with an oil-slick spark.' },
+  horizon: { label: 'Horizon', look: 'A neon sun over a moving grid, with your name in chrome lettering.', back: 'The same sunset, with the grid running to the horizon.', motion: 'The grid rolls toward you the whole time.', alt: 'The Horizon card flipping in 3D: a neon sun over a moving grid.' },
+  volt: { label: 'Volt', look: 'Acid yellow and black, with hazard stripes, oversized angled type and a barcode made from your card number.', back: 'A giant spark between two hazard bands.', motion: 'Your name splits into color as you tilt it.', alt: 'The Volt card flipping in 3D: acid yellow and black with hazard stripes.' },
+};
+const frame = $('#live');
+
+// Tell the page and the fan which design is showing. The live card is the source of truth.
+function showing(id) {
+  document.documentElement.dataset.design = id;
+  document.querySelectorAll('.fcard').forEach(c => c.setAttribute('aria-pressed', c.dataset.id === id));
+  const d = DESIGNS[id];
+  $('#dname').textContent = d.label;
+  $('#dlook').textContent = d.look;
+  $('#dback').textContent = d.back;
+  $('#dmotion').textContent = d.motion;
+  $('#spin').src = `images/${id}.webp`;
+  $('#spin').alt = d.alt;
+}
+
+// The fan: each card lifts on hover and tilts toward the pointer.
+const fan = $('#fan');
+fan.innerHTML = ['horizon', 'obsidian', 'prism', 'phosphor', 'volt'].map((id, n) => `<button class="fcard" type="button" data-id="${id}" aria-pressed="false" style="--i:${n - 2};--d:${(n - 2) ** 2}">
+  <span class="tilt"><img src="images/card-${id}.webp" width="620" height="860" alt="" loading="lazy"><i class="sheen"></i></span>
+  <span class="tag">${DESIGNS[id].label}</span></button>`).join('');
+fan.addEventListener('click', e => {
+  const card = e.target.closest('.fcard');
+  if (card) frame.contentWindow.show(card.dataset.id, true);
+});
+fan.addEventListener('pointermove', e => {
+  const card = e.target.closest('.fcard');
+  if (!card || e.pointerType !== 'mouse') return;
+  const b = card.getBoundingClientRect();
+  const x = (e.clientX - b.left) / b.width, y = (e.clientY - b.top) / b.height;
+  card.style.setProperty('--ty', `${(x - .5) * 20}deg`);
+  card.style.setProperty('--tx', `${(.5 - y) * 16}deg`);
+  card.style.setProperty('--mx', `${x * 100}%`);
+  card.style.setProperty('--my', `${y * 100}%`);
+});
+fan.addEventListener('pointerout', e => {
+  const card = e.target.closest('.fcard');
+  if (card && !card.contains(e.relatedTarget)) { card.style.setProperty('--tx', '0deg'); card.style.setProperty('--ty', '0deg'); }
+});
+
+// The live card is the real card page, with the page's own room taken away so it sits on this one.
+frame.addEventListener('load', () => {
+  const page = frame.contentDocument;
+  page.head.insertAdjacentHTML('beforeend', '<style>html,body{background:transparent!important}.aura,.ghost{display:none}.dock{opacity:1!important}</style>');
+  frame.classList.add('on');
+  showing(page.body.dataset.design);
+  new MutationObserver(() => showing(page.body.dataset.design)).observe(page.body, { attributes: true, attributeFilter: ['data-design'] });
+});
+
+const SAMPLE = [['4.8B', 'tokens'], ['38.4M', 'output'], ['212', 'sessions'], ['6,430', 'prompts'], ['41.2K', 'tool calls'], ['96', 'active days'], ['17d', 'best streak'], ['Opus 5.5', 'top model'], ['Edit', 'top tool'], ['10 PM', 'peak hour'], ['Epic', 'rarity'], ['The Author', 'title'], ['Night Owl', 'shift']];
+$('#ticker').innerHTML = [...SAMPLE, ...SAMPLE, ...SAMPLE, ...SAMPLE].map(([v, l]) => `<span><b>${v}</b> ${l}</span>`).join('');
+
+document.querySelectorAll('.copy').forEach(button => button.addEventListener('click', async () => {
+  await navigator.clipboard.writeText($(`#${button.dataset.copy}`).textContent);
+  button.textContent = 'Copied';
+  setTimeout(() => { button.textContent = 'Copy'; }, 1600);
+}));
+
+const seen = new IntersectionObserver(entries => entries.forEach(entry => {
+  if (entry.isIntersecting) { entry.target.classList.add('in'); seen.unobserve(entry.target); }
+}), { threshold: .12 });
+document.querySelectorAll('.reveal, .fan').forEach(el => seen.observe(el));
+</script>
+</body>
+</html>
